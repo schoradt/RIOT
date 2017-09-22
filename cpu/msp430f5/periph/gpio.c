@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Freie Universität Berlin
+ *               2017 infotec
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,7 +8,7 @@
  */
 
 /**
- * @ingroup     cpu_msp430fxyz
+ * @ingroup     cpu_msp430f5
  * @ingroup     drivers_periph_gpio
  * @{
  *
@@ -15,6 +16,7 @@
  * @brief       Low-level GPIO driver implementation
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  * @}
  */

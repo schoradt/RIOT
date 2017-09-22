@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Freie Universität Berlin
+ *               2017 infotec
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,7 +8,7 @@
  */
 
 /**
- * @ingroup         cpu_msp430fxyz
+ * @ingroup         cpu_msp430f5
  * @{
  *
  * @file
@@ -99,7 +100,7 @@ typedef enum {
 #endif /* ndef DOXYGEN */
 
 /**
- * @brief   Available ports on MSP430 platforms
+ * @brief   Available ports on MSP430f5 platforms
  */
 enum {
     P1 = 1,                 /**< PORT 1 */

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Freie Universität Berlin
+ *               2017 infotec
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,17 +8,18 @@
  */
 
 /**
- * @ingroup     cpu_msp430fxyz
+ * @ingroup     cpu_msp430f5
  * @{
  *
  * @file
- * @brief       Cortex CMSIS style definition of MSP430 registers
+ * @brief       Definition of MSP430f5 family registers
  *
  * @todo        This file is incomplete, not all registers are listed. Further
  *              There are probably some inconsistencies throughout the MSP430
  *              family which need to be addressed.
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  */
 
 #ifndef MSP430_REGS_H
@@ -57,31 +59,31 @@ typedef struct {
 
 typedef struct {
     REG8    IN;         /**< input data */
-    REG8    RES1;
+    REG8    :8;
     REG8    OD;         /**< output data */
-    REG8    RES2;
+    REG8    :8;
     REG8    DIR;        /**< pin direction */
-    REG8    RES3;
+    REG8    :8;
     REG8    REN;
-    REG8    RES4;
+    REG8    :8;
     REG8    DS;
-    REG8    RES5;
+    REG8    :8;
     REG8    SEL;        /**< alternative function select */
-    REG8    RES6;
+    REG8    :8;
 } msp_port_e_t;
 
 typedef struct {
-	REG8    RES1;
+	REG8    :8;
     REG8    IN;         /**< input data */
-    REG8    RES2;
+    REG8    :8;
     REG8    OD;         /**< output data */
-    REG8    RES3;
+    REG8    :8;
     REG8    DIR;        /**< pin direction */
-    REG8    RES4;
+    REG8    :8;
     REG8    REN;
-    REG8    RES5;
+    REG8    :8;
     REG8    DS;
-    REG8    RES6;
+    REG8    :8;
     REG8    SEL;        /**< alternative function select */
 } msp_port_o_t;
 
@@ -90,54 +92,54 @@ typedef struct {
  */
 typedef struct {
     REG8    IN;         /**< input data */
-    REG8    RES1;
+    REG8    :8;
     REG8    OD;         /**< output data */
-    REG8    RES2;
+    REG8    :8;
     REG8    DIR;        /**< pin direction */
-    REG8    RES3;
+    REG8    :8;
     REG8    REN;
-    REG8    RES4;
+    REG8    :8;
     REG8    DS;
-    REG8    RES5;
+    REG8    :8;
     REG8    SEL;        /**< alternative function select */
-    REG8    RES6;
-    REG16   RES7;
+    REG8    :8;
+    REG16   :16;
     REG16   IV;
-    REG16   RES8;
-    REG16   RES9;
-    REG16   RES10;
-    REG16   RES11;
+    REG16   :16;
+    REG16   :16;
+    REG16   :16;
+    REG16   :16;
     REG8    IES;
-    REG8    RES12;
+    REG8    :8;
     REG8    IE;
-    REG8    RES13;
+    REG8    :8;
     REG8    IFG;
 } msp_port_isr_e_t;
 
 typedef struct {
-	REG8    RES1;
+	REG8    :8;
     REG8    IN;         /**< input data */
-    REG8    RES2;
+    REG8    :8;
     REG8    OD;         /**< output data */
-    REG8    RES3;
+    REG8    :8;
     REG8    DIR;        /**< pin direction */
-    REG8    RES4;
+    REG8    :8;
     REG8    REN;
-    REG8    RES5;
+    REG8    :8;
     REG8    DS;
-    REG8    RES6;
+    REG8    :8;
     REG8    SEL;        /**< alternative function select */
-    REG8    RES7;
-    REG16   RES8;
-	REG16   RES9;
-	REG16   RES10;
-	REG16   RES11;
-	REG16   RES12;
-	REG16   RES13;
+    REG8    :8;
+    REG16   :16;
+	REG16   :16;
+	REG16   :16;
+	REG16   :16;
+	REG16   :16;
+	REG16   :16;
 	REG8    IES;
-	REG8    RES14;
+	REG8    :8;
 	REG8    IE;
-	REG8    RES15;
+	REG8    :8;
 	REG8    IFG;
 	REG16   IV;
 } msp_port_isr_o_t;
@@ -467,8 +469,9 @@ typedef struct {
 #define PORT_11_BASE            ((uint16_t)0x02A0)
 
 #define TIMER_IVEC_BASE         ((uint16_t)0x011e)
-#define TIMER_A_BASE            ((uint16_t)0x0160)
-#define TIMER_B_BASE            ((uint16_t)0x0180)
+#define TIMER_A0_BASE           ((uint16_t)0x0380)
+#define TIMER_A1_BASE           ((uint16_t)0x03C0)
+#define TIMER_B0_BASE           ((uint16_t)0x04A0)
 #define WD_BASE                 ((uint16_t)0x0120)
 
 #define USCI_A0_BASE            ((uint16_t)0x05C0)
@@ -503,8 +506,9 @@ typedef struct {
 #define USART_1                 ((msp_usart_t *)USART_1_BASE)
 
 #define TIMER_IVEC              ((msp_timer_ivec_t *)TIMER_IVEC_BASE)
-#define TIMER_A                 ((msp_timer_t *)TIMER_A_BASE)
-#define TIMER_B                 ((msp_timer_t *)TIMER_B_BASE)
+#define TIMER_A0                ((msp_timer_t *)TIMER_A0_BASE)
+#define TIMER_A1                ((msp_timer_t *)TIMER_A1_BASE)
+#define TIMER_B0                ((msp_timer_t *)TIMER_B0_BASE)
 #define WD                      ((msp_wd_t *)WD_BASE)
 
 #define USCI_A0                 ((msp_usci_a_t *)USCI_A0_BASE)

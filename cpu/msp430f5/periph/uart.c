@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Freie Universität Berlin
+ *               2017 infotec
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,7 +8,7 @@
  */
 
 /**
- * @ingroup     cpu_msp430fxyz
+ * @ingroup     cpu_msp430f5
  * @ingroup     drivers_periph_uart
  * @{
  *
@@ -15,6 +16,7 @@
  * @brief       Low-level UART driver implementation
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  * @}
  */
@@ -33,7 +35,6 @@ static void *ctx_isr_arg;
 /** @} */
 
 static int init_base(uart_t uart, uint32_t baudrate);
-
 
 int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, void *arg)
 {
@@ -79,6 +80,7 @@ static int init_base(uart_t uart, uint32_t baudrate)
 //    UART_BASE->BR1 = (uint8_t)(br >> 8);
 //    UART_BASE->MCTL = (brs << USCI_MCTL_BRS_SHIFT);
 
+    // TODO reenable baudrate computation
     UART_BASE->BR0 = 3;
     UART_BASE->BR1 = 0;
     UART_BASE->MCTL = 0 | (3 << 1) | (0 << 4);

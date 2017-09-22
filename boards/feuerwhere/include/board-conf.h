@@ -10,16 +10,16 @@
 #define BOARD_CONF_H
 
 /**
- * @ingroup     boards_z1
+ * @ingroup     boards_feuerwhere
  *
  * @{
  */
 
 /**
  * @file
- * @brief       Zolertia Z1 board configuration macros
+ * @brief       FeuerWhere board configuration macros
  *
- * @author      Kévin Roussel <Kevin.Roussel@inria.fr>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  */
 

@@ -1,8 +1,8 @@
 /*
- * board.c - Board initialization for the Zolertia Z1
- * Copyright (C) 2014 INRIA
+ * board.c - Board initialization for the IHP FeuerWhere
+ * Copyright (C) 2017 infotec
  *
- * Author : Kévin Roussel <Kevin.Roussel@inria.fr>
+ * Author : Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -10,13 +10,13 @@
  */
 
 /**
- * @ingroup     boards_z1
+ * @ingroup     boards_feuerwhere
  * @{
  *
  * @file
  * @brief       Board specific implementations for the Zolertia Z1
  *
- * @author      Kévin Roussel <Kevin.Roussel@inria.fr>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  * @}
  */

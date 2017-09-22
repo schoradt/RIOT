@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2014 INRIA
- *               2015 Freie Universität Berlin
+ * Copyright (C) 2017 infotec
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -11,21 +10,20 @@
 #define BOARD_H
 
 /**
- * @defgroup    boards_z1 Zolertia Z1
+ * @defgroup    boards_feuerwhere FeuerWhere
  * @ingroup     boards
- * @brief       Support for the Zolertia Z1 board.
+ * @brief       Support for the IHP FeuerWhere board.
  *
 <h2>Components</h2>
-\li MSP430F2617
-\li CC2420
+\li MSP430F5483A
+\li CC1101
 
 * @{
 *
  * @file
- * @brief       Zolertia Z1 board configuration
+ * @brief       FeuerWhere board configuration
  *
- * @author      Kévin Roussel <Kevin.Roussel@inria.fr>
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Sven Schoradt <s.schoradt@infotec-edv.de>
  *
  */
 
@@ -71,10 +69,6 @@ extern "C" {
  * @name    LED pin definitions and handlers
  * @{
  */
-//#define LED0_PIN                    GPIO_PIN(4, 0)
-//#define LED1_PIN                    GPIO_PIN(4, 1)
-//#define LED2_PIN                    GPIO_PIN(4, 2)
-
 #define LED_OUT_REG                 PORT_8->OD
 #define LED0_MASK                   (1 << 0)
 #define LED1_MASK                   (1 << 1)
@@ -118,32 +112,13 @@ extern "C" {
 #define LED7_TOGGLE                 (LED_OUT_REG ^= LED7_MASK)
 /** @} */
 
-#define UART_STDIO_BAUDRATE         (9600U)
 
 /**
- * @name    User button configuration
+ * @name    UART Configuration
  * @{
  */
-#define BTN0_PIN            P2IN
-#define BTN0_MASK           (0x20)
-#define BTN0_MODE           GPIO_IN
-
-#define BTN0_PRESSED        ((BTN0_PIN & BTN0_MASK) == 0)
-#define BTN0_RELEASED       ((BTN0_PIN & BTN0_MASK) != 0)
+#define UART_STDIO_BAUDRATE         (9600U)
 /** @} */
-
-/**
- * @brief   Definition of the interface to the CC2420 radio
- */
-#define CC2420_PARAMS_BOARD         {.spi        = SPI_DEV(0), \
-                                     .spi_clk    = SPI_CLK_5MHZ, \
-                                     .pin_cs     = GPIO_PIN(P3, 0), \
-                                     .pin_fifo   = GPIO_PIN(P1, 3), \
-                                     .pin_fifop  = GPIO_PIN(P1, 2), \
-                                     .pin_cca    = GPIO_PIN(P1, 4), \
-                                     .pin_sfd    = GPIO_PIN(P4, 1), \
-                                     .pin_vrefen = GPIO_PIN(P4, 5), \
-                                     .pin_reset  = GPIO_PIN(P4, 6)}
 
 #ifdef __cplusplus
 }
