@@ -18,6 +18,7 @@ cachegrind.out*
 .project
 .cproject
 .settings
+.pydevproject
 .idea
 # KDevelop4 project files
 .kdev4

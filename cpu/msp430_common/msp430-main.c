@@ -53,55 +53,79 @@ init_ports(void)
     /* Turn everything off, device drivers enable what is needed. */
 
     /* All configured for digital I/O */
-#ifdef P1SEL
-    P1SEL = 0;
-#endif
-#ifdef P2SEL
-    P2SEL = 0;
-#endif
-#ifdef P3SEL
-    P3SEL = 0;
-#endif
-#ifdef P4SEL
-    P4SEL = 0;
-#endif
-#ifdef P5SEL
-    P5SEL = 0;
-#endif
-#ifdef P6SEL
-    P6SEL = 0;
+#ifdef PORT_1
+	PORT_1->SEL = 0;
+
+	PORT_1->DIR = 0;
+	PORT_1->OD = 0;
+
+	((msp_port_isr_e_t *)PORT_1)->IE = 0;
 #endif
 
-    /* All available inputs */
-#ifdef P1DIR
-    P1DIR = 0;
-    P1OUT = 0;
-#endif
-#ifdef P2DIR
-    P2DIR = 0;
-    P2OUT = 0;
-#endif
-#ifdef P3DIR
-    P3DIR = 0;
-    P3OUT = 0;
-#endif
-#ifdef P4DIR
-    P4DIR = 0;
-    P4OUT = 0;
+#ifdef PORT_2
+	PORT_2->SEL = 0;
+
+	PORT_2->DIR = 0;
+	PORT_2->OD = 0;
+
+	((msp_port_isr_e_t *)PORT_2)->IE = 0;
 #endif
 
-#ifdef P5DIR
-    P5DIR = 0;
-    P5OUT = 0;
+#ifdef PORT_3
+	PORT_3->SEL = 0;
+
+	PORT_3->DIR = 0;
+	PORT_3->OD = 0;
 #endif
 
-#ifdef P6DIR
-    P6DIR = 0;
-    P6OUT = 0;
+#ifdef PORT_4
+	PORT_4->SEL = 0;
+
+	PORT_4->DIR = 0;
+	PORT_4->OD = 0;
 #endif
 
-    P1IE = 0;
-    P2IE = 0;
+#ifdef PORT_5
+	PORT_5->SEL = 0;
+
+	PORT_5->DIR = 0;
+	PORT_5->OD = 0;
+#endif
+
+#ifdef PORT_6
+	PORT_6->SEL = 0;
+
+	PORT_6->DIR = 0;
+	PORT_6->OD = 0;
+#endif
+
+#ifdef PORT_7
+	PORT_7->SEL = 0;
+
+	PORT_7->DIR = 0;
+	PORT_7->OD = 0;
+#endif
+
+#ifdef PORT_8
+	PORT_8->SEL = 0;
+
+	PORT_8->DIR = 0;
+	PORT_8->OD = 0;
+#endif
+
+#ifdef PORT_9
+	PORT_9->SEL = 0;
+
+	PORT_9->DIR = 0;
+	PORT_9->OD = 0;
+#endif
+
+#ifdef PORT_10
+	PORT_10->SEL = 0;
+
+	PORT_10->DIR = 0;
+	PORT_10->OD = 0;
+#endif
 }
 
 /*---------------------------------------------------------------------------*/

@@ -40,6 +40,9 @@ extern "C" {
 #elif defined (CPU_MODEL_CC430F6137)
 #define CPU_FLASH_BASE      (0x8000)
 #define FLASHPAGE_NUMOF     (64)        /* 32K */
+#elif defined (CPU_MODEL_MSP430F5438)
+#define CPU_FLASH_BASE      (0x0140)
+#define FLASHPAGE_NUMOF     (512)       /* 256K */
 #endif
 /** @} */
 
