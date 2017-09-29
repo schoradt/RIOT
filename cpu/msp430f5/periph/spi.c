@@ -31,47 +31,51 @@
 /**
  * @brief   Mutex for locking the SPI device
  */
-static mutex_t spi_lock = MUTEX_INIT;
+static mutex_t spi_lock[SPI_NUMOF];
 
+static msp_spi_conf_t msp_spi_conf[SPI_NUMOF] = SPI_CONF;
 
 void spi_init(spi_t bus)
 {
     assert(bus <= SPI_NUMOF);
 
-/* we need to differentiate between the legacy SPI device and USCI */
-#ifndef SPI_USE_USCI
     /* put SPI device in reset state */
-    SPI_BASE->CTL = USART_CTL_SWRST;
-    SPI_BASE->CTL |= (USART_CTL_CHAR | USART_CTL_SYNC | USART_CTL_MM);
-    SPI_BASE->RCTL = 0;
-    SPI_BASE->MCTL = 0;
-    /* enable SPI mode */
-    SPI_ME |= SPI_ME_BIT;
-#else
-    /* reset SPI device */
-    SPI_BASE->CTL1 = USCI_SPI_CTL1_SWRST;
-    SPI_BASE->CTL1 |= (USCI_SPI_CTL1_SSEL_SMCLK);
-#endif
+    msp_spi_conf_t* conf = &msp_spi_conf[bus];
+
+    conf->base->CTL1 = USCI_SPI_CTL1_SWRST;
+    conf->base->CTL1 |= (USCI_SPI_CTL1_SSEL_SMCLK);
 
     /* trigger the pin configuration */
     spi_init_pins(bus);
+
+    mutex_init(&spi_lock[bus]);
 }
 
 void spi_init_pins(spi_t bus)
 {
-    gpio_periph_mode(SPI_PIN_MISO, true);
-    gpio_periph_mode(SPI_PIN_MOSI, true);
-    gpio_periph_mode(SPI_PIN_CLK, true);
+	assert(bus <= SPI_NUMOF);
+
+	/* put SPI device in reset state */
+	msp_spi_conf_t* conf = &msp_spi_conf[bus];
+
+    gpio_periph_mode(conf->miso, true);
+    gpio_periph_mode(conf->mosi, true);
+    gpio_periph_mode(conf->clk, true);
 }
 
 int spi_acquire(spi_t bus, spi_cs_t cs, spi_mode_t mode, spi_clk_t clk)
 {
+	assert(bus <= SPI_NUMOF);
+
+	/* put SPI device in reset state */
+	msp_spi_conf_t* conf = &msp_spi_conf[bus];
+
     if (clk == SPI_CLK_10MHZ) {
         return SPI_NOCLK;
     }
 
     /* lock the bus */
-    mutex_lock(&spi_lock);
+    mutex_lock(&(spi_lock[bus]));
 
     /* calculate baudrate */
     uint32_t br = CLOCK_CMCLK / clk;
@@ -79,42 +83,41 @@ int spi_acquire(spi_t bus, spi_cs_t cs, spi_mode_t mode, spi_clk_t clk)
     if (br < 2) {
         br = 2;
     }
-    SPI_BASE->BR0 = (uint8_t)br;
-    SPI_BASE->BR1 = (uint8_t)(br >> 8);
+    conf->base->BR0 = (uint8_t)br;
+    conf->base->BR1 = (uint8_t)(br >> 8);
 
     /* configure bus mode */
-#ifndef SPI_USE_USCI
     /* configure mode */
-    SPI_BASE->TCTL = (USART_TCTL_SSEL_SMCLK | USART_TCTL_STC | mode);
-    /* release from software reset */
-    SPI_BASE->CTL &= ~(USART_CTL_SWRST);
-#else
-    /* configure mode */
-    SPI_BASE->CTL0 = (USCI_SPI_CTL0_UCSYNC | USCI_SPI_CTL0_MST|
+    conf->base->CTL0 = (USCI_SPI_CTL0_UCSYNC | USCI_SPI_CTL0_MST|
                      USCI_SPI_CTL0_MODE_0 | USCI_SPI_CTL0_MSB | mode);
     /* release from software reset */
-    SPI_BASE->CTL1 &= ~(USCI_SPI_CTL1_SWRST);
-#endif
+    conf->base->CTL1 &= ~(USCI_SPI_CTL1_SWRST);
 
     return SPI_OK;
 }
 
-void spi_release(spi_t dev)
+void spi_release(spi_t bus)
 {
+	assert(bus <= SPI_NUMOF);
+
+	/* put SPI device in reset state */
+	msp_spi_conf_t* conf = &msp_spi_conf[bus];
+
     /* put SPI device back in reset state */
-#ifndef SPI_USE_USCI
-    SPI_BASE->CTL |= (USART_CTL_SWRST);
-#else
-    SPI_BASE->CTL1 |= (USCI_SPI_CTL1_SWRST);
-#endif
+	conf->base->CTL1 |= (USCI_SPI_CTL1_SWRST);
 
     /* release the bus */
-    mutex_unlock(&spi_lock);
+    mutex_unlock(&(spi_lock[bus]));
 }
 
 void spi_transfer_bytes(spi_t bus, spi_cs_t cs, bool cont,
                         const void *out, void *in, size_t len)
 {
+	assert(bus <= SPI_NUMOF);
+
+	/* put SPI device in reset state */
+	msp_spi_conf_t* conf = &msp_spi_conf[bus];
+
     const uint8_t *out_buf = out;
     uint8_t *in_buf = in;
 
@@ -127,30 +130,34 @@ void spi_transfer_bytes(spi_t bus, spi_cs_t cs, bool cont,
     /* if we only send out data, we do this the fast way... */
     if (!in_buf) {
         for (size_t i = 0; i < len; i++) {
-            while (!(SPI_IF & SPI_IE_TX_BIT)) {}
-            SPI_BASE->TXBUF = out_buf[i];
+            while (!(conf->base->IFG & SPI_IE_TX_BIT)) {}
+
+            conf->base->TXBUF = out_buf[i];
         }
+
         /* finally we need to wait, until all transfers are complete */
-#ifndef SPI_USE_USCI
-        while (!(SPI_IF & SPI_IE_TX_BIT) || !(SPI_IF & SPI_IE_RX_BIT)) {}
-#else
-        while (SPI_BASE->STAT & USCI_SPI_STAT_UCBUSY) {}
-#endif
-        SPI_BASE->RXBUF;
+        while (conf->base->STAT & USCI_SPI_STAT_UCBUSY) {}
+
+        conf->base->RXBUF;
     }
     else if (!out_buf) {
         for (size_t i = 0; i < len; i++) {
-            SPI_BASE->TXBUF = 0;
-            while (!(SPI_IF & SPI_IE_RX_BIT)) {}
-            in_buf[i] = (char)SPI_BASE->RXBUF;
+        	conf->base->TXBUF = 0;
+
+            while (!(conf->base->IFG & SPI_IE_RX_BIT)) {}
+
+            in_buf[i] = (char)conf->base->RXBUF;
         }
     }
     else {
         for (size_t i = 0; i < len; i++) {
-            while (!(SPI_IF & SPI_IE_TX_BIT)) {}
-            SPI_BASE->TXBUF = out_buf[i];
-            while (!(SPI_IF & SPI_IE_RX_BIT)) {}
-            in_buf[i] = (char)SPI_BASE->RXBUF;
+            while (!(conf->base->IFG & SPI_IE_TX_BIT)) {}
+
+            conf->base->TXBUF = out_buf[i];
+
+            while (!(conf->base->IFG & SPI_IE_RX_BIT)) {}
+
+            in_buf[i] = (char)conf->base->RXBUF;
         }
     }
 

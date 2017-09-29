@@ -115,6 +115,15 @@ enum {
 	P10 = 10,               /**< PORT 10 */
 };
 
+typedef struct {
+	msp_usci_spi_t* base;
+	gpio_t miso;
+	gpio_t mosi;
+	gpio_t clk;
+} msp_spi_conf_t;
+
+
+
 /**
  * @brief   Enable or disable a pin to be used by peripheral modules
  *

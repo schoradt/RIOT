@@ -196,7 +196,7 @@ typedef struct {
 	REG16   :16;
 	REG8    BR0;
 	REG8    BR1;
-	REG8    :8;
+	REG8    MCTL;
 	REG8    :8;
 	REG8    STAT;
 	REG8    :8;
@@ -218,18 +218,36 @@ typedef struct {
 } msp_usci_b_t;
 
 /**
- * @brief   USCI SPI specific registers
+ * @brief   USCI universal serial control interface registers for SPI
  */
 typedef struct {
-    REG8    CTL0;      /**< control 0 */
-    REG8    CTL1;      /**< control 1 */
-    REG8    BR0;       /**< baud rate 0 */
-    REG8    BR1;       /**< baud rate 1 */
-    REG8    reserved;  /**< reserved */
-    REG8    STAT;      /**< status */
-    REG8    RXBUF;     /**< receive buffer */
-    REG8    TXBUF;     /**< transmit buffer */
+	REG8    CTL1;
+	REG8    CTL0;
+	REG16   :16;
+	REG16   :16;
+	REG8    BR0;
+	REG8    BR1;
+	REG8    MCTL;
+	REG8    :8;
+	REG8    STAT;
+	REG8    :8;
+	REG8    RXBUF;
+	REG8    :8;
+	REG8    TXBUF;
+	REG8    :8;
+	REG8    :8;
+	REG8    :8;
+	REG8    :8;
+	REG8    :8;
+	REG16   :16;
+	REG16   :16;
+	REG16   :16;
+	REG16   :16;
+	REG8    IE;
+	REG8    IFG;
+	REG8    IV;
 } msp_usci_spi_t;
+
 
 /**
  * @brief   Timer interrupt status registers
@@ -469,9 +487,11 @@ typedef struct {
 #define PORT_11_BASE            ((uint16_t)0x02A0)
 
 #define TIMER_IVEC_BASE         ((uint16_t)0x011e)
-#define TIMER_A0_BASE           ((uint16_t)0x0380)
-#define TIMER_A1_BASE           ((uint16_t)0x03C0)
-#define TIMER_B0_BASE           ((uint16_t)0x04A0)
+
+#define TIMER_A0_BASE           ((uint16_t)0x0340)
+#define TIMER_A1_BASE           ((uint16_t)0x0380)
+#define TIMER_B0_BASE           ((uint16_t)0x03C0)
+
 #define WD_BASE                 ((uint16_t)0x0120)
 
 #define USCI_A0_BASE            ((uint16_t)0x05C0)
