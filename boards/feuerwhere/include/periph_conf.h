@@ -20,6 +20,7 @@
 #define PERIPH_CONF_H
 
 #include "board.h"
+#include "periph_cpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,15 +73,22 @@ extern "C" {
  * @name    SPI configuration
  * @{
  */
-#define SPI_NUMOF           (0U)
+#define SPI_NUMOF           (1U)
+
+#define SPI_CONF { \
+    { \
+        .base  = ((msp_usci_spi_t*)USCI_B0), \
+		.miso = GPIO_PIN(3,1), \
+		.mosi = GPIO_PIN(3,2), \
+		.clk = GPIO_PIN(3,3) \
+    }, \
+}
 
 /* SPI configuration */
 #define SPI_USE_USCI
 #define SPI_BASE            (USCI_B1)
-#define SPI_IE              (SFR->IE2)
-#define SPI_IF              (SFR->IFG2)
-#define SPI_IE_RX_BIT       (1 << 2)
-#define SPI_IE_TX_BIT       (1 << 3)
+#define SPI_IE_RX_BIT       (1 << 0)
+#define SPI_IE_TX_BIT       (1 << 1)
 #define SPI_PIN_MISO        GPIO_PIN(P3,7)
 #define SPI_PIN_MOSI        GPIO_PIN(P5,4)
 #define SPI_PIN_CLK         GPIO_PIN(P5,5)
