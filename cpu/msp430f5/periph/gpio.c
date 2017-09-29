@@ -133,6 +133,8 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
 		}
 
 		port_e->OD &= ~(_pin(pin));
+
+
     } else {
 		if (mode == GPIO_OUT) {
 			port_o->DIR |= _pin(pin);
@@ -143,6 +145,9 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
 
 		port_o->OD &= ~(_pin(pin));
     }
+
+    isr_ctx[_ctx(pin)].cb = 0;
+    isr_ctx[_ctx(pin)].arg = 0;
 
     return 0;
 }
@@ -352,7 +357,10 @@ static inline void isr_handler_e(msp_port_isr_e_t *port, int ctx)
     for (int i = 0; i < PINS_PER_PORT; i++) {
         if ((port->IE & (1 << i)) && (port->IFG & (1 << i))) {
             port->IFG &= ~(1 << i);
-            isr_ctx[i + ctx].cb(isr_ctx[i + ctx].arg);
+
+            if (isr_ctx[i + ctx].cb) {
+                isr_ctx[i + ctx].cb(isr_ctx[i + ctx].arg);
+            }
         }
     }
 }
@@ -362,7 +370,10 @@ static inline void isr_handler_o(msp_port_isr_o_t *port, int ctx)
     for (int i = 0; i < PINS_PER_PORT; i++) {
         if ((port->IE & (1 << i)) && (port->IFG & (1 << i))) {
             port->IFG &= ~(1 << i);
-            isr_ctx[i + ctx].cb(isr_ctx[i + ctx].arg);
+
+            if (isr_ctx[i + ctx].cb) {
+                isr_ctx[i + ctx].cb(isr_ctx[i + ctx].arg);
+            }
         }
     }
 }
