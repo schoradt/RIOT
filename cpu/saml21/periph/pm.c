@@ -38,9 +38,14 @@ void pm_set(unsigned mode)
                 DEBUG("pm_set(): setting STANDBY mode.\n");
                 _mode = PM_SLEEPCFG_SLEEPMODE_STANDBY;
                 break;
+            default: /* Falls through */
             case 2:
                 DEBUG("pm_set(): setting IDLE mode.\n");
+#if defined(CPU_MODEL_SAMR30G18A) || defined(CPU_MODEL_SAMR34J18B)
+                _mode = PM_SLEEPCFG_SLEEPMODE_IDLE;
+#else
                 _mode = PM_SLEEPCFG_SLEEPMODE_IDLE2;
+#endif
                 break;
         }
 

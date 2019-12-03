@@ -9,9 +9,7 @@
  */
 
 /**
- * @defgroup    boards_pic32-wifire Digilent PIC32 WiFire
- * @ingroup     boards
- * @brief       board configuration for the Digilent PIC32 WiFire
+ * @ingroup     boards_pic32-wifire
  * @details
  * See:
  * http://store.digilentinc.com/chipkit-wi-fire-wifi-enabled-mz-microcontroller-board/
@@ -48,7 +46,7 @@ extern "C" {
 #define EIC_IRQ      (1)
 
 /**
- * @brief   LED pin configuration
+ * @name    LED pin configuration
  * @{
  */
 #define LED1_PIN            GPIO_PIN(PORT_G, 6)
@@ -82,6 +80,13 @@ extern "C" {
  * @brief   Board level initialization
  */
 void board_init(void);
+
+/**
+ * @brief   Use the 4th UART for STDIO on this board
+ *
+ * This is the UART connected to the FTDI USB <-> UART device.
+ */
+#define STDIO_UART_DEV      UART_DEV(4)
 
 #ifdef __cplusplus
 }

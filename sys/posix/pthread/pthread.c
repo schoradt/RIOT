@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup pthread POSIX threads
- * POSIX conforming multi-threading features.
- * @ingroup posix
+ * @ingroup pthread
  * @{
  * @file
  * @brief   Thread creation features.
@@ -89,7 +87,7 @@ static void *pthread_start_routine(void *pt_)
 
 static int insert(pthread_thread_t *pt)
 {
-    int result = -1;
+    int result = KERNEL_PID_UNDEF;
     mutex_lock(&pthread_mutex);
 
     for (int i = 0; i < MAXTHREADS; i++){
@@ -162,7 +160,7 @@ int pthread_create(pthread_t *newthread, const pthread_attr_t *attr, void *(*sta
                                    pthread_start_routine,
                                    pt,
                                    "pthread");
-    if (pt->thread_pid == KERNEL_PID_UNDEF) {
+    if (!pid_is_valid(pt->thread_pid)) {
         free(pt->stack);
         free(pt);
         pthread_sched_threads[pthread_pid-1] = NULL;
@@ -237,7 +235,7 @@ int pthread_join(pthread_t th, void **thread_return)
             other->joining_thread = sched_active_pid;
             /* go blocked, I'm waking up if other thread exits */
             thread_sleep();
-            /* no break */
+            /* falls through */
         case (PTS_ZOMBIE):
             if (thread_return) {
                 *thread_return = other->returnval;

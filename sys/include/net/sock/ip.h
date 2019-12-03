@@ -362,7 +362,7 @@ void sock_ip_close(sock_ip_t *sock);
 int sock_ip_get_local(sock_ip_t *sock, sock_ip_ep_t *ep);
 
 /**
- * @brief   Gets the remote end point of a UDP sock object
+ * @brief   Gets the remote end point of a raw IPv4/IPv6 sock object
  *
  * @pre `(sock != NULL) && (ep != NULL)`
  *
@@ -373,7 +373,7 @@ int sock_ip_get_local(sock_ip_t *sock, sock_ip_ep_t *ep);
  * implementation might choose to return the address on this interface the
  * @p sock is bound to in @p ep's sock_ip_ep_t::addr.
  *
- * @param[in] sock  A UDP sock object.
+ * @param[in] sock  A raw IPv4/IPv6 sock object.
  * @param[out] ep   The remote end point.
  *
  * @return  0 on success.
@@ -403,6 +403,8 @@ int sock_ip_get_remote(sock_ip_t *sock, sock_ip_ep_t *ep);
  * @return  0, if no received data is available, but everything is in order.
  * @return  -EADDRNOTAVAIL, if local of @p sock is not given.
  * @return  -EAGAIN, if @p timeout is `0` and no data is available.
+ * @return  -EINVAL, if @p remote is invalid or @p sock is not properly
+ *          initialized (or closed while sock_ip_recv() blocks).
  * @return  -ENOBUFS, if buffer space is not large enough to store received
  *          data.
  * @return  -ENOMEM, if no memory was available to receive @p data.

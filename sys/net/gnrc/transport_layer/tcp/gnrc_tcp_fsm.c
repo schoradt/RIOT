@@ -17,8 +17,11 @@
  * @}
  */
 
+#include <utlist.h>
+#include <errno.h>
 #include "random.h"
 #include "net/af.h"
+#include "net/gnrc.h"
 #include "internal/common.h"
 #include "internal/pkt.h"
 #include "internal/option.h"
@@ -188,6 +191,7 @@ static int _transition_to(gnrc_tcp_tcb_t *tcb, fsm_state_t state)
             mutex_unlock(&_list_tcb_lock);
             break;
 
+        case FSM_STATE_SYN_RCVD:
         case FSM_STATE_ESTABLISHED:
         case FSM_STATE_CLOSE_WAIT:
             tcb->status |= STATUS_NOTIFY_USER;
@@ -275,7 +279,7 @@ static int _fsm_call_send(gnrc_tcp_tcb_t *tcb, void *buf, size_t len)
         /* Calculate payload size for this segment */
         gnrc_pktsnip_t *out_pkt = NULL;
         uint16_t seq_con = 0;
-        _pkt_build(tcb, &out_pkt, &seq_con, MSK_ACK, tcb->snd_nxt, tcb->rcv_nxt, buf, payload);
+        _pkt_build(tcb, &out_pkt, &seq_con, MSK_ACK | MSK_PSH, tcb->snd_nxt, tcb->rcv_nxt, buf, payload);
         _pkt_setup_retransmit(tcb, out_pkt, false);
         _pkt_send(tcb, out_pkt, seq_con, false);
         return payload;
@@ -303,9 +307,11 @@ static int _fsm_call_recv(gnrc_tcp_tcb_t *tcb, void *buf, size_t len)
     /* Read data into 'buf' up to 'len' bytes from receive buffer */
     size_t rcvd = ringbuffer_get(&(tcb->rcv_buf), buf, len);
 
-    /* If receive buffer can store more than GNRC_TCP_MSS: open window to available buffer size */
-    if (ringbuffer_get_free(&tcb->rcv_buf) >= GNRC_TCP_MSS) {
-        tcb->rcv_wnd = ringbuffer_get_free(&(tcb->rcv_buf));
+    /* Reopen window if recv buffer can hold a MSS sized payload and FIN was not received. */
+    uint16_t buf_free = ringbuffer_get_free(&tcb->rcv_buf);
+
+    if (buf_free >= GNRC_TCP_MSS && tcb->state != FSM_STATE_CLOSE_WAIT) {
+        tcb->rcv_wnd = buf_free;
 
         /* Send ACK to anounce window update */
         gnrc_pktsnip_t *out_pkt = NULL;
@@ -474,6 +480,20 @@ static int _fsm_rcvd_pkt(gnrc_tcp_tcb_t *tcb, gnrc_pktsnip_t *in_pkt)
             if (snp->type == GNRC_NETTYPE_IPV6 && tcb->address_family == AF_INET6) {
                 memcpy(tcb->local_addr, &((ipv6_hdr_t *)ip)->dst, sizeof(ipv6_addr_t));
                 memcpy(tcb->peer_addr, &((ipv6_hdr_t *)ip)->src, sizeof(ipv6_addr_t));
+
+                /* In case peer_addr is link local: Store interface Id in tcb */
+                if (ipv6_addr_is_link_local((ipv6_addr_t *) tcb->peer_addr)) {
+                    gnrc_pktsnip_t *tmp = NULL;
+                    LL_SEARCH_SCALAR(in_pkt, tmp, type, GNRC_NETTYPE_NETIF);
+                    /* cppcheck-suppress knownConditionTrueFalse
+                     * (reason: tmp *can* be != NULL after LL_SEARCH_SCALAR) */
+                    if (tmp == NULL) {
+                        DEBUG("gnrc_tcp_fsm.c : _fsm_rcvd_pkt() :\
+                               incomming packet had no netif header\n");
+                        return 0;
+                    }
+                    tcb->ll_iface = ((gnrc_netif_hdr_t *)tmp->data)->if_pid;
+                }
             }
 #else
             DEBUG("gnrc_tcp_fsm.c : _fsm_rcvd_pkt() : Received address was not stored\n");

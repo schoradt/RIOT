@@ -8,7 +8,7 @@
  */
 
 /*
- * @ingroup     auto_init_saul
+ * @ingroup     sys_auto_init_saul
  * @{
  *
  * @file
@@ -26,16 +26,20 @@
 #include "saul/periph.h"
 #include "gpio_params.h"
 #include "periph/gpio.h"
+#include "kernel_defines.h"
 
 /**
  * @brief   Define the number of configured sensors
  */
-#define SAUL_GPIO_NUMOF    (sizeof(saul_gpio_params)/sizeof(saul_gpio_params[0]))
+#if defined(SAUL_GPIO_NUMOF) && !(SAUL_GPIO_NUMOF > 0)
+void auto_init_gpio(void)
+{
+    /* do nothing, no GPIO configured for SAUL */
+    LOG_DEBUG("[auto_init_saul] no SAUL GPIO configured!\n");
+}
+#else
+#define SAUL_GPIO_NUMOF ARRAY_SIZE(saul_gpio_params)
 
-/**
- * @brief   Allocate memory for the device descriptors
- */
-static gpio_t saul_gpios[SAUL_GPIO_NUMOF];
 
 /**
  * @brief   Memory for the registry entries
@@ -60,8 +64,7 @@ void auto_init_gpio(void)
 
         LOG_DEBUG("[auto_init_saul] initializing GPIO #%u\n", i);
 
-        saul_gpios[i] = p->pin;
-        saul_reg_entries[i].dev = &(saul_gpios[i]);
+        saul_reg_entries[i].dev = (void *)p;
         saul_reg_entries[i].name = p->name;
         if ((p->mode == GPIO_IN) || (p->mode == GPIO_IN_PD) ||
             (p->mode == GPIO_IN_PU)) {
@@ -72,11 +75,17 @@ void auto_init_gpio(void)
         }
         /* initialize the GPIO pin */
         gpio_init(p->pin, p->mode);
+        /* set initial pin state if configured */
+        if (p->flags & (SAUL_GPIO_INIT_CLEAR | SAUL_GPIO_INIT_SET)) {
+            phydat_t s;
+            s.val[0] = (p->flags & SAUL_GPIO_INIT_SET);
+            saul_reg_entries[i].driver->write(p, &s);
+        }
         /* add to registry */
         saul_reg_add(&(saul_reg_entries[i]));
     }
 }
-
+#endif
 #else
 typedef int dont_be_pedantic;
 #endif /* MODULE_SAUL_GPIO */

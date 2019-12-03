@@ -29,7 +29,7 @@ extern "C" {
 
 /**
  * @name    Set default configuration parameters for the SX127X driver
- *          Pins are adapted to ST Nucleo boards.
+ *          Pins are adapted to STM32 Nucleo-64 boards.
  * @{
  */
 #ifndef SX127X_PARAM_SPI
@@ -60,13 +60,41 @@ extern "C" {
 #define SX127X_PARAM_DIO3                   GPIO_PIN(1, 4)       /* D5 */
 #endif
 
-#define SX127X_PARAMS_DEFAULT               { .spi       = SX127X_PARAM_SPI,     \
-                                              .nss_pin   = SX127X_PARAM_SPI_NSS, \
-                                              .reset_pin = SX127X_PARAM_RESET,   \
-                                              .dio0_pin  = SX127X_PARAM_DIO0,    \
-                                              .dio1_pin  = SX127X_PARAM_DIO1,    \
-                                              .dio2_pin  = SX127X_PARAM_DIO2,    \
-                                              .dio3_pin  = SX127X_PARAM_DIO3 }
+#ifndef SX127X_PARAM_PASELECT
+#define SX127X_PARAM_PASELECT               (SX127X_PA_RFO)
+#endif
+
+#ifndef SX127X_PARAM_TX_SWITCH
+#define SX127X_PARAM_TX_SWITCH              GPIO_UNDEF
+#endif
+
+#ifndef SX127X_PARAM_RX_SWITCH
+#define SX127X_PARAM_RX_SWITCH              GPIO_UNDEF
+#endif
+
+#ifndef SX127X_PARAMS
+#if defined(SX127X_USE_TX_SWITCH) || defined(SX127X_USE_RX_SWITCH)
+#define SX127X_PARAMS             { .spi            = SX127X_PARAM_SPI,          \
+                                    .nss_pin        = SX127X_PARAM_SPI_NSS,      \
+                                    .reset_pin      = SX127X_PARAM_RESET,        \
+                                    .dio0_pin       = SX127X_PARAM_DIO0,         \
+                                    .dio1_pin       = SX127X_PARAM_DIO1,         \
+                                    .dio2_pin       = SX127X_PARAM_DIO2,         \
+                                    .dio3_pin       = SX127X_PARAM_DIO3,         \
+                                    .rx_switch_pin  = SX127X_PARAM_RX_SWITCH,    \
+                                    .tx_switch_pin  = SX127X_PARAM_TX_SWITCH,    \
+                                    .paselect       = SX127X_PARAM_PASELECT }
+#else
+#define SX127X_PARAMS             { .spi       = SX127X_PARAM_SPI,          \
+                                    .nss_pin   = SX127X_PARAM_SPI_NSS,      \
+                                    .reset_pin = SX127X_PARAM_RESET,        \
+                                    .dio0_pin  = SX127X_PARAM_DIO0,         \
+                                    .dio1_pin  = SX127X_PARAM_DIO1,         \
+                                    .dio2_pin  = SX127X_PARAM_DIO2,         \
+                                    .dio3_pin  = SX127X_PARAM_DIO3,         \
+                                    .paselect  = SX127X_PARAM_PASELECT }
+#endif
+#endif
 /**@}*/
 
 /**
@@ -74,11 +102,7 @@ extern "C" {
  */
 static const sx127x_params_t sx127x_params[] =
 {
-#ifdef SX127X_PARAMS_BOARD
-    SX127X_PARAMS_BOARD,
-#else
-    SX127X_PARAMS_DEFAULT,
-#endif
+    SX127X_PARAMS
 };
 
 #ifdef __cplusplus

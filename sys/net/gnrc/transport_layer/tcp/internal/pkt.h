@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    net_gnrc_tcp TCP
- * @ingroup     net_gnrc
- * @brief       RIOT's TCP implementation for the GNRC network stack.
+ * @ingroup     net_gnrc_tcp
  *
  * @{
  *
@@ -23,7 +21,7 @@
 #define PKT_H
 
 #include <stdint.h>
-#include "net/gnrc/pkt.h"
+#include "net/gnrc.h"
 #include "net/gnrc/tcp/tcb.h"
 
 #ifdef __cplusplus

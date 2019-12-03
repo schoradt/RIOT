@@ -9,14 +9,12 @@
 #include "dynamixel.h"
 #include "shell.h"
 #include "shell_commands.h"
-#include "uart_stdio.h"
+#include "stdio_uart.h"
 #include "board.h"
 #include "periph/gpio.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#define ARRAY_LEN(array) (sizeof(array)/sizeof(array[0]))
 
 typedef struct {
     const char *name;
@@ -71,15 +69,21 @@ static uint8_t dynamixel_buffer[128];
 static uart_half_duplex_t stream;
 
 #ifdef DXL_DIR_PIN
-static void dir_init(uart_t uart) {
+static void dir_init(uart_t uart)
+{
+    (void)uart;
     gpio_init(DXL_DIR_PIN, GPIO_OUT);
 }
 
-static void dir_enable_tx(uart_t uart) {
+static void dir_enable_tx(uart_t uart)
+{
+    (void)uart;
     gpio_set(DXL_DIR_PIN);
 }
 
-static void dir_disable_tx(uart_t uart) {
+static void dir_disable_tx(uart_t uart)
+{
+    (void)uart;
     gpio_clear(DXL_DIR_PIN);
 }
 #else
@@ -95,7 +99,7 @@ static int parse_uart(char *arg)
         printf("Error: Invalid UART_DEV device specified (%u).\n", uart);
         return -1;
     }
-    else if (UART_DEV(uart) == UART_STDIO_DEV) {
+    else if (UART_DEV(uart) == STDIO_UART_DEV) {
         printf("Error: The selected UART_DEV(%u) is used for the shell!\n", uart);
         return -2;
     }
@@ -106,7 +110,7 @@ static int32_t parse_baud(char *arg)
 {
     int32_t baud = atoi(arg);
 
-    for (size_t i = 0 ; i < ARRAY_LEN(baudrates) ; i++) {
+    for (size_t i = 0 ; i < ARRAY_SIZE(baudrates); i++) {
         if (baud == baudrates[i]) {
             return baud;
         }
@@ -131,14 +135,14 @@ static void parse_reg(char *arg, int *reg8, int *reg16)
     *reg8 = -1;
     *reg16 = -1;
 
-    for (size_t i = 0 ; i < ARRAY_LEN(regs8) ; i++) {
+    for (size_t i = 0 ; i < ARRAY_SIZE(regs8); i++) {
         if (strcmp(arg, regs8[i].name) == 0) {
             *reg8 = regs8[i].addr;
             return;
         }
     }
 
-    for (size_t i = 0 ; i < ARRAY_LEN(regs16) ; i++) {
+    for (size_t i = 0 ; i < ARRAY_SIZE(regs16); i++) {
         if (strcmp(arg, regs16[i].name) == 0) {
             *reg16 = regs16[i].addr;
             return;
@@ -148,19 +152,21 @@ static void parse_reg(char *arg, int *reg8, int *reg16)
     printf("Error: Invalid register (%s)\n", arg);
 }
 
-void print_registers(void) {
+void print_registers(void)
+{
     puts("available 8bits registers :");
-    for (size_t i = 0 ; i < ARRAY_LEN(regs8) ; i++) {
+    for (size_t i = 0 ; i < ARRAY_SIZE(regs8); i++) {
         printf("\t%s\n", regs8[i].name);
     }
 
     puts("available 16bits registers :");
-    for (size_t i = 0 ; i < ARRAY_LEN(regs16) ; i++) {
+    for (size_t i = 0 ; i < ARRAY_SIZE(regs16); i++) {
         printf("\t%s\n", regs16[i].name);
     }
 }
 
-static int cmd_init(int argc, char **argv) {
+static int cmd_init(int argc, char **argv)
+{
     int uart = -1;
     int baud = -1;
     uint32_t timeout = -1;
@@ -168,7 +174,7 @@ static int cmd_init(int argc, char **argv) {
     if (argc != 3 && argc != 4) {
         printf("usage; %s <uart> <baudrate> [<timeout_us>]\n", argv[0]);
         puts("available baudrates :");
-        for (size_t i = 0 ; i < ARRAY_LEN(baudrates) ; i++) {
+        for (size_t i = 0 ; i < ARRAY_SIZE(baudrates); i++) {
             printf("\t%ld\n", (long int)baudrates[i]);
         }
         return 1;
@@ -199,7 +205,8 @@ static int cmd_init(int argc, char **argv) {
         .dir = { dir_init, dir_enable_tx, dir_disable_tx },
     };
 
-    int ret = uart_half_duplex_init(&stream, dynamixel_buffer, ARRAY_LEN(dynamixel_buffer), &params);
+    int ret = uart_half_duplex_init(&stream, dynamixel_buffer,
+                                    ARRAY_SIZE(dynamixel_buffer), &params);
 
     if (argc == 4) {
         stream.timeout_us = timeout;
@@ -230,7 +237,8 @@ static int cmd_init(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_ping(int argc, char **argv) {
+static int cmd_ping(int argc, char **argv)
+{
     int id = -1;
 
     if (argc != 2) {
@@ -253,7 +261,8 @@ static int cmd_ping(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_scan(int argc, char **argv) {
+static int cmd_scan(int argc, char **argv)
+{
     int min = -1;
     int max = -1;
 
@@ -290,7 +299,8 @@ static int cmd_scan(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_read(int argc, char **argv) {
+static int cmd_read(int argc, char **argv)
+{
     int id = -1;
     int reg8 = -1;
     int reg16 = -1;
@@ -335,7 +345,8 @@ static int cmd_read(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_write(int argc, char **argv) {
+static int cmd_write(int argc, char **argv)
+{
     int id = -1;
     int reg8 = -1;
     int reg16 = -1;

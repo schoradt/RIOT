@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Freie Universität Berlin
+ * Copyright (C) 2014,2017 Freie Universität Berlin
  *
  * This file is subject to the terms and conditions of the GNU Lesser General
  * Public License v2.1. See the file LICENSE in the top level directory for more
@@ -11,7 +11,7 @@
  * @{
  *
  * @file
- * @brief       Manual test application for GPIO peripheral drivers
+ * @brief       Test application for GPIO peripheral drivers
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  *
@@ -21,13 +21,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "irq.h"
 #include "shell.h"
+#include "benchmark.h"
 #include "periph/gpio.h"
 
+#define BENCH_RUNS_DEFAULT      (1000UL * 1000)
+
+#ifdef MODULE_PERIPH_GPIO_IRQ
 static void cb(void *arg)
 {
     printf("INT: external interrupt from pin %i\n", (int)arg);
 }
+#endif
 
 static int init_pin(int argc, char **argv, gpio_mode_t mode)
 {
@@ -79,6 +85,7 @@ static int init_od_pu(int argc, char **argv)
     return init_pin(argc, argv, GPIO_OD_PU);
 }
 
+#ifdef MODULE_PERIPH_GPIO_IRQ
 static int init_int(int argc, char **argv)
 {
     int po, pi;
@@ -145,6 +152,42 @@ static int init_int(int argc, char **argv)
     return 0;
 }
 
+static int enable_int(int argc, char **argv)
+{
+    int po, pi;
+    int status;
+
+    if (argc < 4) {
+        printf("usage: %s <port> <pin> <status>\n", argv[0]);
+        puts("\tstatus:\n"
+             "\t0: disable\n"
+             "\t1: enable\n");
+        return 1;
+    }
+
+    po = atoi(argv[1]);
+    pi = atoi(argv[2]);
+
+    status = atoi(argv[3]);
+
+    switch (status) {
+        case 0:
+            puts("disabling GPIO interrupt");
+            gpio_irq_disable(GPIO_PIN(po, pi));
+            break;
+        case 1:
+            puts("enabling GPIO interrupt");
+            gpio_irq_enable(GPIO_PIN(po, pi));
+            break;
+        default:
+            puts("error: invalid status");
+            return 1;
+    }
+
+    return 0;
+}
+#endif
+
 static int read(int argc, char **argv)
 {
     int port, pin;
@@ -203,6 +246,30 @@ static int toggle(int argc, char **argv)
     return 0;
 }
 
+static int bench(int argc, char **argv)
+{
+    if (argc < 3) {
+        printf("usage: %s <port> <pin> [# of runs]\n", argv[0]);
+        return 1;
+    }
+
+    gpio_t pin = GPIO_PIN(atoi(argv[1]), atoi(argv[2]));
+    unsigned long runs = BENCH_RUNS_DEFAULT;
+    if (argc > 3) {
+        runs = (unsigned long)atol(argv[3]);
+    }
+
+    puts("\nGPIO driver run-time performance benchmark\n");
+    BENCHMARK_FUNC("nop loop", runs, __asm__ volatile("nop"));
+    BENCHMARK_FUNC("gpio_set", runs, gpio_set(pin));
+    BENCHMARK_FUNC("gpio_clear", runs, gpio_clear(pin));
+    BENCHMARK_FUNC("gpio_toggle", runs, gpio_toggle(pin));
+    BENCHMARK_FUNC("gpio_read", runs, (void)gpio_read(pin));
+    BENCHMARK_FUNC("gpio_write", runs, gpio_write(pin, 1));
+    puts("\n --- DONE ---");
+    return 0;
+}
+
 static const shell_command_t shell_commands[] = {
     { "init_out", "init as output (push-pull mode)", init_out },
     { "init_in", "init as input w/o pull resistor", init_in },
@@ -210,11 +277,15 @@ static const shell_command_t shell_commands[] = {
     { "init_in_pd", "init as input with pull-down", init_in_pd },
     { "init_od", "init as output (open-drain without pull resistor)", init_od },
     { "init_od_pu", "init as output (open-drain with pull-up)", init_od_pu },
+#ifdef MODULE_PERIPH_GPIO_IRQ
     { "init_int", "init as external INT w/o pull resistor", init_int },
+    { "enable_int", "enable or disable gpio interrupt", enable_int },
+#endif
     { "read", "read pin status", read },
     { "set", "set pin to HIGH", set },
     { "clear", "set pin to LOW", clear },
     { "toggle", "toggle pin", toggle },
+    { "bench", "run a set of predefined benchmarks", bench },
     { NULL, NULL, NULL }
 };
 

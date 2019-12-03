@@ -21,6 +21,7 @@
 #include "cpu.h"
 #include "periph_conf.h"
 #include "periph/init.h"
+#include "stdio_base.h"
 
 #ifndef CLOCK_8MHZ
 #define CLOCK_8MHZ          1
@@ -161,11 +162,10 @@ static void clk_init(void)
     }
 
     SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
-    while ((SYSCTRL->PCLKSR.reg & (SYSCTRL_PCLKSR_DFLLRDY |
-                                   SYSCTRL_PCLKSR_DFLLLCKF |
-                                   SYSCTRL_PCLKSR_DFLLLCKC)) == 0) {
-        /* Wait for DFLLLXXX sync */
-    }
+    uint32_t mask = SYSCTRL_PCLKSR_DFLLRDY |
+                    SYSCTRL_PCLKSR_DFLLLCKF |
+                    SYSCTRL_PCLKSR_DFLLLCKC;
+    while ((SYSCTRL->PCLKSR.reg & mask) != mask) { } /* Wait for DFLL lock */
 
     /* select the DFLL as source for clock generator 0 (CPU core clock) */
     GCLK->GENDIV.reg =  (GCLK_GENDIV_DIV(1U) | GCLK_GENDIV_ID(0));
@@ -188,14 +188,20 @@ static void clk_init(void)
     /* make sure we synchronize clock generator 0 before we go on */
     while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY) {}
 
-#if GEN2_ULP32K
     /* Setup Clock generator 2 with divider 1 (32.768kHz) */
     GCLK->GENDIV.reg  = (GCLK_GENDIV_ID(2)  | GCLK_GENDIV_DIV(0));
-    GCLK->GENCTRL.reg = (GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_GENEN |
-            GCLK_GENCTRL_RUNSTDBY |
-            GCLK_GENCTRL_SRC_OSCULP32K);
+    GCLK->GENCTRL.reg = (GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_GENEN
+                      | GCLK_GENCTRL_RUNSTDBY
+#if GEN2_ULP32K
+                      | GCLK_GENCTRL_SRC_OSCULP32K);
+#else
+                      | GCLK_GENCTRL_SRC_XOSC32K);
 
-    while (GCLK->STATUS.bit.SYNCBUSY) {}
+    SYSCTRL->XOSC32K.reg = SYSCTRL_XOSC32K_ONDEMAND
+                         | SYSCTRL_XOSC32K_EN32K
+                         | SYSCTRL_XOSC32K_XTALEN
+                         | SYSCTRL_XOSC32K_STARTUP(6)
+                         | SYSCTRL_XOSC32K_ENABLE;
 #endif
 
     /* redirect all peripherals to a disabled clock generator (7) by default */
@@ -213,6 +219,8 @@ void cpu_init(void)
     cortexm_init();
     /* Initialise clock sources and generic clocks */
     clk_init();
+    /* initialize stdio prior to periph_init() to allow use of DEBUG() there */
+    stdio_init();
     /* trigger static peripheral initialization */
     periph_init();
 }

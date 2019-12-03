@@ -1,10 +1,12 @@
-APPLICATION = pthread_tls
 include ../Makefile.tests_common
 
-BOARD_BLACKLIST := arduino-mega2560 waspmote-pro arduino-uno arduino-duemilanove
-# arduino mega2560 uno duemilanove: unknown type name: clockid_t
-
-USEMODULE += posix
+USEMODULE += posix_headers
 USEMODULE += pthread
+
+BOARD_INSUFFICIENT_MEMORY = \
+	arduino-duemilanove \
+	arduino-nano \
+	arduino-uno \
+	#
 
 include $(RIOTBASE)/Makefile.include

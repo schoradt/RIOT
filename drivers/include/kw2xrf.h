@@ -31,6 +31,7 @@
 #include "net/netdev.h"
 #include "net/netdev/ieee802154.h"
 #include "net/gnrc/nettype.h"
+#include "thread.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,11 +41,6 @@ extern "C" {
  * @brief   Maximum packet length
  */
 #define KW2XRF_MAX_PKT_LENGTH           (IEEE802154_FRAME_LEN_MAX)
-
-/**
- * @brief   Default PAN ID used after initialization
- */
-#define KW2XRF_DEFAULT_PANID            (IEEE802154_DEFAULT_PANID)
 
 /**
  * @name    Default channel used after initialization
@@ -129,6 +125,7 @@ typedef struct {
      * @brief   device specific fields
      * @{
      */
+    thread_t *thread;                   /**< Network driver thread, for providing feedback from IRQ handler */
     kw2xrf_params_t params;             /**< parameters for initialization */
     uint8_t buf[KW2XRF_MAX_PKT_LENGTH]; /**< Buffer for incoming or outgoing packets */
     uint8_t state;                      /**< current state of the radio */

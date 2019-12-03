@@ -8,13 +8,12 @@
  *
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include "periph/gpio.h"
 #include "periph/hwrng.h"
-#include "periph/uart.h"
 #include "bitarithm.h"
 #include "board.h"
+#include "cpu.h"
 
 extern void dummy(void);
 
@@ -27,13 +26,6 @@ void board_init(void)
     U4RXR =   0xb;            /* connect pin RPF2 to UART 4 RX */
     RPF8R =   0x2;            /* connect pin RPF8 to UART 4 TX */
 
-    /* intialise UART used for debug (printf) */
-#ifdef DEBUG_VIA_UART
-    uart_init(DEBUG_VIA_UART, DEBUG_UART_BAUD, NULL, 0);
-#endif
-
-    hwrng_init();
-
     /* Turn off all LED's */
     gpio_init(LED1_PIN, GPIO_OUT);
     gpio_init(LED2_PIN, GPIO_OUT);
@@ -43,6 +35,9 @@ void board_init(void)
     LED2_OFF;
     LED3_OFF;
     LED4_OFF;
+
+    /* initialize the CPU */
+    cpu_init();
 
     /* Stop the linker from throwing away the PIC32 config register settings */
     dummy();

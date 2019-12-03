@@ -1,60 +1,104 @@
-APPLICATION = unittests
+DEVELHELP ?= 0
 include ../Makefile.tests_common
+
+# Issue with integer width
+# There are present for a long time but hidden by being not compiled
+BOARD_BLACKLIST += arduino-duemilanove
+BOARD_BLACKLIST += arduino-leonardo
+BOARD_BLACKLIST += arduino-mega2560
+BOARD_BLACKLIST += arduino-nano
+BOARD_BLACKLIST += arduino-uno
+BOARD_BLACKLIST += chronos
+BOARD_BLACKLIST += mega-xplained
+BOARD_BLACKLIST += msb-430
+BOARD_BLACKLIST += msb-430h
+BOARD_BLACKLIST += telosb
+BOARD_BLACKLIST += waspmote-pro
+BOARD_BLACKLIST += wsn430-v1_3b
+BOARD_BLACKLIST += wsn430-v1_4
+BOARD_BLACKLIST += z1
 
 BOARD_INSUFFICIENT_MEMORY := airfy-beacon \
                              arduino-duemilanove \
+                             arduino-leonardo \
                              arduino-mega2560 \
                              arduino-mkr1000 \
+                             arduino-mkrfox1200 \
+                             arduino-mkrwan1300 \
                              arduino-mkrzero \
+                             arduino-nano \
                              arduino-uno \
                              arduino-zero \
                              b-l072z-lrwan1 \
+                             blackpill \
+                             blackpill-128kib \
+                             bluepill \
+                             bluepill-128kib \
                              calliope-mini \
-                             cc2538dk \
+                             cc2650-launchpad \
                              cc2650stk \
                              chronos \
+                             esp8266-esp-12x \
+                             esp8266-olimex-mod \
+                             esp8266-sparkfun-thing \
                              ek-lm4f120xl \
+                             feather-m0 \
+                             hamilton \
+                             hifive1 \
+                             hifive1b \
+                             i-nucleo-lrwan1 \
+                             ikea-tradfri \
                              limifrog-v1 maple-mini \
-                             mbed_lpc1768 \
+                             lobaro-lorabox \
+                             lsn50 \
+                             mega-xplained \
                              microbit \
                              msb-430 \
                              msb-430h \
+                             nrf51dk \
                              nrf51dongle \
                              nrf6310 \
-                             nucleo32-f031 \
-                             nucleo32-f042 \
-                             nucleo32-f303 \
-                             nucleo32-l031 \
-                             nucleo32-l432 \
-                             nucleo-f030 \
-                             nucleo-f070 \
-                             nucleo-f072 \
-                             nucleo-f091 \
-                             nucleo-f103 \
-                             nucleo-f302 \
-                             nucleo-f334 \
-                             nucleo-f410 \
-                             nucleo-l053 \
-                             nucleo-l073 \
+                             nucleo-f031k6 \
+                             nucleo-f042k6 \
+                             nucleo-f303k8 \
+                             nucleo-l031k6 \
+                             nucleo-l432kc \
+                             nucleo-f030r8 \
+                             nucleo-f070rb \
+                             nucleo-f072rb \
+                             nucleo-f091rc \
+                             nucleo-f103rb \
+                             nucleo-f302r8 \
+                             nucleo-f334r8 \
+                             nucleo-f410rb \
+                             nucleo-l053r8 \
+                             nucleo-l073rz \
+                             nucleo-l433rc \
                              nz32-sc151 \
                              opencm904 \
-                             openmote \
-                             openmote-cc2538 \
                              pba-d-01-kw2x \
-                             pca10000 \
-                             pca10005 \
-                             remote-pa \
-                             remote-reva \
-                             remote-revb \
+                             saml10-xpro \
+                             saml11-xpro \
                              saml21-xpro \
                              samd21-xpro \
                              samr21-xpro \
-                             seeeduino_arch-pro \
+                             samr30-xpro \
+                             samr34-xpro \
+                             sensebox_samd21 \
+                             slstk3401a \
+                             sltb001a \
+                             slwstk6000b-slwrb4150a \
                              slwstk6220a \
                              sodaq-autonomo \
+                             sodaq-explorer \
+                             sodaq-one \
+                             sodaq-sara-aff \
                              spark-core \
+                             stk3600 \
                              stm32f0discovery \
                              stm32f3discovery \
+                             stm32l0538-disco \
+                             teensy31 \
                              telosb \
                              waspmote-pro \
                              wsn430-v1_3b \
@@ -69,99 +113,6 @@ ifeq (, $(filter tests-%, $(MAKECMDGOALS)))
   UNIT_TESTS := $(patsubst %/Makefile,%,$(wildcard tests-*/Makefile))
 else
   UNIT_TESTS := $(filter tests-%, $(MAKECMDGOALS))
-endif
-
-ARM7_BOARDS := msba2 avrextrem
-DISABLE_TEST_FOR_ARM7 := tests-relic tests-cpp_%
-
-ARM_CORTEX_M_BOARDS := airfy-beacon \
-                       arduino-due \
-                       arduino-mkr1000 \
-                       arduino-mkrzero \
-                       arduino-zero \
-                       b-l072z-lrwan1 \
-                       cc2538dk \
-                       ek-lm4f120xl \
-                       f4vi1 \
-                       fox \
-                       frdm-k64f \
-                       iotlab-m3 \
-                       limifrog-v1 \
-                       mbed_lpc1768 \
-                       msbiot \
-                       mulle \
-                       nrf51dongle \
-                       nrf52840dk \
-                       nrf6310 \
-                       nucleo144-f303 \
-                       nucleo144-f412 \
-                       nucleo144-f429 \
-                       nucleo144-f446 \
-                       nucleo32-f031 \
-                       nucleo32-f303 \
-                       nucleo32-l031 \
-                       nucleo32-l432 \
-                       nucleo-f030 \
-                       nucleo-f070 \
-                       nucleo-f072 \
-                       nucleo-f091 \
-                       nucleo-f302 \
-                       nucleo-f303 \
-                       nucleo-f334 \
-                       nucleo-f401 \
-                       nucleo-f410 \
-                       nucleo-f411 \
-                       nucleo-l053 \
-                       nucleo-l073 \
-                       nucleo-l152 \
-                       nucleo-l476 \
-                       nz32-sc151 \
-                       opencm904 \
-                       openmote-cc2538 \
-                       pba-d-01-kw2x \
-                       pca10000 \
-                       pca10005 \
-                       remote \
-                       samd21-xpro \
-                       saml21-xpro \
-                       samr21-xpro \
-                       slwstk6220a \
-                       sodaq-autonomo \
-                       spark-core \
-                       stm32f0discovery \
-                       stm32f3discovery \
-                       stm32f4discovery \
-                       udoo \
-                       yunjia-nrf51822
-
-DISABLE_TEST_FOR_ARM_CORTEX_M := tests-relic
-
-AVR_BOARDS := arduino-mega2560 waspmote-pro arduino-uno arduino-duemilanove
-DISABLE_TEST_FOR_AVR := tests-relic tests-cpp_%
-
-MSP430_BOARDS :=  chronos msb-430 msb-430h telosb wsn430-v1_3b wsn430-v1_4 z1
-DISABLE_TEST_FOR_MSP430 := tests-relic tests-spiffs tests-cpp_%
-
-ifneq (, $(filter $(ARM7_BOARDS), $(BOARD)))
-  UNIT_TESTS := $(filter-out $(DISABLE_TEST_FOR_ARM7), $(UNIT_TESTS))
-endif
-
-ifneq (, $(filter $(ARM_CORTEX_M_BOARDS), $(BOARD)))
-  UNIT_TESTS := $(filter-out $(DISABLE_TEST_FOR_ARM_CORTEX_M), $(UNIT_TESTS))
-endif
-
-ifneq (, $(filter $(AVR_BOARDS), $(BOARD)))
-  UNIT_TESTS := $(filter-out $(DISABLE_TEST_FOR_AVR), $(UNIT_TESTS))
-endif
-
-ifneq (, $(filter $(MSP430_BOARDS), $(BOARD)))
-  UNIT_TESTS := $(filter-out $(DISABLE_TEST_FOR_MSP430), $(UNIT_TESTS))
-endif
-
-ifneq (,$(filter tests-cpp_%, $(UNIT_TESTS)))
-  # We need to tell the build system to use the C++ compiler for linking
-  export FEATURES_REQUIRED += cpp
-  export CPPMIX := 1
 endif
 
 DISABLE_MODULE += auto_init
@@ -180,6 +131,9 @@ include $(RIOTBASE)/Makefile.include
 
 all:
 
+info-unittests:
+	@echo $(UNIT_TESTS)
+
 $(UNIT_TESTS): all
 
 charCOMMA := ,
@@ -190,6 +144,3 @@ ifeq (, $(UNIT_TESTS))
 else
   CFLAGS += -DTEST_SUITES='$(subst $() $(),$(charCOMMA),$(UNIT_TESTS:tests-%=%))'
 endif
-
-test:
-	./tests/01-run.py

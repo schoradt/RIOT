@@ -7,10 +7,12 @@
  */
 
 /**
+ * @ingroup     tests
  * @{
  *
  * @file
  * @author  Martine Lenders <mlenders@inf.fu-berlin.de>
+ * @}
  */
 
 
@@ -141,7 +143,7 @@ bool _check_packet(const ipv6_addr_t *src, const ipv6_addr_t *dst,
             return _res(pkt, false);
         }
         netif_hdr = pkt->data;
-        if (netif_hdr->if_pid != iface) {
+        if (netif_hdr->if_pid != (int)iface) {
             return _res(pkt, false);
         }
         ipv6 = pkt->next;
@@ -167,6 +169,3 @@ bool _check_packet(const ipv6_addr_t *src, const ipv6_addr_t *dst,
                 (data_len == udp->next->size) &&
                 (memcmp(data, udp->next->data, data_len) == 0));
 }
-
-
-/** @} */

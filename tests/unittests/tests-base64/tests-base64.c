@@ -208,9 +208,9 @@ static void test_base64_06_stream_encode(void)
 
     /* required output size +2 extra bytes */
     size_t encoded_size = 264 + 2;
-    /* cppcheck-suppress unassignedVariable */
+    /* cppcheck-suppress unassignedVariable
+     * (reason: the above array is used/assigned in base64_encode() using its pointer) */
     unsigned char encode_result[encoded_size];
-    /* the above array is used/assigned in base64_encode() using its pointer. */
 
     int remain = strlen((char *)stream_encode);
     int out_iter = 0;
@@ -264,9 +264,9 @@ static void test_base64_07_stream_decode(void)
     /* required output size +2 extra bytes */
     size_t decoded_size = 196 + 2;
 
-    /* cppcheck-suppress unassignedVariable */
+    /* cppcheck-suppress unassignedVariable
+     * (reason: the above array is used/assigned in base64_decode() using its pointer) */
     unsigned char stream_decoded[decoded_size];
-    /* the above array is used/assigned in base64_decode() using its pointer. */
 
     size_t encoded_size = strlen((char *)encoded);
     int remain = encoded_size;
@@ -383,6 +383,33 @@ static void test_base64_09_encode_size_determination(void)
     TEST_ASSERT_EQUAL_INT(required_out_size, expected_out_size);
 }
 
+static void test_base64_10_encode_empty(void)
+{
+    unsigned char data_in[] = "";
+
+    size_t base64_out_size = 8;
+    unsigned char base64_out[8];
+
+    int ret = base64_encode(data_in, 0, base64_out, &base64_out_size);
+
+    TEST_ASSERT_EQUAL_INT(BASE64_SUCCESS, ret);
+    TEST_ASSERT_EQUAL_INT(0, base64_out_size);
+}
+
+static void test_base64_10_decode_empty(void)
+{
+    unsigned char data_in[] = "";
+
+    size_t base64_out_size = 8;
+    unsigned char base64_out[8];
+
+    int ret = base64_decode(data_in, 0, base64_out, &base64_out_size);
+
+    TEST_ASSERT_EQUAL_INT(BASE64_SUCCESS, ret);
+    TEST_ASSERT_EQUAL_INT(0, base64_out_size);
+}
+
+
 Test *tests_base64_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
@@ -395,6 +422,8 @@ Test *tests_base64_tests(void)
         new_TestFixture(test_base64_07_stream_decode),
         new_TestFixture(test_base64_08_encode_16_bytes),
         new_TestFixture(test_base64_09_encode_size_determination),
+        new_TestFixture(test_base64_10_encode_empty),
+        new_TestFixture(test_base64_10_decode_empty),
     };
 
     EMB_UNIT_TESTCALLER(base64_tests, NULL, NULL, fixtures);

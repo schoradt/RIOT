@@ -8,7 +8,7 @@
  */
 
 /**
- * @ingroup     auto_init_saul
+ * @ingroup     sys_auto_init_saul
  * @{
  *
  * @file
@@ -30,7 +30,7 @@
 /**
  * @brief   Define the number of configured sensors
  */
-#define SAUL_ADC_NUMOF    (sizeof(saul_adc_params)/sizeof(saul_adc_params[0]))
+#define SAUL_ADC_NUMOF    ARRAY_SIZE(saul_adc_params)
 
 /**
  * @brief   Allocate memory for pointers to the ADC parameter structs

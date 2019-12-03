@@ -1,37 +1,56 @@
+DEVELHELP := 1
 # name of your application
-APPLICATION = gnrc_ipv6_ext
 include ../Makefile.tests_common
 
-BOARD_INSUFFICIENT_MEMORY := airfy-beacon chronos maple-mini msb-430 msb-430h \
-                             nrf51dongle nrf6310 nucleo32-f031 nucleo32-f042 \
-                             nucleo32-l031 nucleo-f030 nucleo-f103 nucleo-f334 nucleo-l053 \
-                             pca10000 pca10005 spark-core stm32f0discovery telosb \
-                             wsn430-v1_3b wsn430-v1_4 yunjia-nrf51822 z1
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo \
+                             arduino-mega2560 arduino-nano \
+                             arduino-uno hifive1 hifive1b i-nucleo-lrwan1 mega-xplained \
+                             msb-430 msb-430h nucleo-f030r8 nucleo-f031k6 \
+                             nucleo-f042k6 nucleo-f070rb nucleo-f072rb \
+                             nucleo-f303k8 nucleo-f334r8 nucleo-l031k6 \
+                             nucleo-l053r8 stm32f0discovery stm32l0538-disco \
+                             telosb thingy52 \
+                             waspmote-pro wsn430-v1_3b wsn430-v1_4 z1
+# chronos, hamilton and ruuvitag boards don't support ethos
+BOARD_BLACKLIST := chronos hamilton ruuvitag
 
-# Include packages that pull up and auto-init the link layer.
-# NOTE: 6LoWPAN will be included if IEEE802.15.4 devices are present
-USEMODULE += gnrc_netdev_default
+export TAP ?= tap0
+
+# use Ethernet as link-layer protocol
+ifeq (native,$(BOARD))
+  USEMODULE += netdev_tap
+
+  TERMFLAGS ?= $(TAP)
+else
+  USEMODULE += stdio_ethos
+
+  ETHOS_BAUDRATE ?= 115200
+  CFLAGS += -DETHOS_BAUDRATE=$(ETHOS_BAUDRATE)
+  TERMDEPS += ethos
+  TERMPROG ?= sudo $(RIOTTOOLS)/ethos/ethos
+  TERMFLAGS ?= $(TAP) $(PORT) $(ETHOS_BAUDRATE)
+endif
 USEMODULE += auto_init_gnrc_netif
 # Specify the mandatory networking modules for IPv6
 USEMODULE += gnrc_ipv6_router_default
+USEMODULE += gnrc_icmpv6_error
+USEMODULE += gnrc_pktdump
+USEMODULE += gnrc_pktbuf_cmd
 # IPv6 extension headers
 USEMODULE += gnrc_ipv6_ext
-USEMODULE += gnrc_rpl_srh
-USEMODULE += gnrc_sixlowpan_iphc_nhc
-# UDP
-USEMODULE += gnrc_udp
+USEMODULE += od
 # Add also the shell, some shell commands
+USEMODULE += shell
+USEMODULE += shell_commands
 USEMODULE += ps
 
-# Comment this out to disable code in RIOT that does safety checking
-# which is not needed in a production environment but helps in the
-# development process:
-CFLAGS += -DDEVELHELP
+# The test requires some setup and to be run as root
+# So it cannot currently be run
+TEST_ON_CI_BLACKLIST += all
+
+.PHONY: ethos
+
+ethos:
+	$(Q)env -u CC -u CFLAGS make -C $(RIOTTOOLS)/ethos
 
 include $(RIOTBASE)/Makefile.include
-
-# This requires ENABLE_DEBUG in gnrc_ipv6.c to be 1
-test:
-# `testrunner` calls `make term` recursively, results in duplicated `TERMFLAGS`.
-# So clears `TERMFLAGS` before run.
-	TERMFLAGS= tests/01-run.py

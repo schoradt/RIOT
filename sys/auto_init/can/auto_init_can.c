@@ -7,7 +7,7 @@
  */
 
 /**
- * @ingroup auto_init
+ * @ingroup     sys_auto_init
  * @{
  * @file
  * @brief       initializes can device init function
@@ -52,5 +52,10 @@ void auto_init_candev(void)
 #ifdef MODULE_CAN_LINUX
     extern void auto_init_can_native(void);
     auto_init_can_native();
+#endif
+
+#ifdef MODULE_PERIPH_CAN
+    extern void auto_init_periph_can(void);
+    auto_init_periph_can();
 #endif
 }

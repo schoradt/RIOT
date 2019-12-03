@@ -60,13 +60,6 @@ extern "C" {
 /** @} */
 
 /**
- * @name    ADC configuration
- * @{
- */
-#define ADC_NUMOF           (0)
-/** @} */
-
-/**
  * @name    Timer configuration
  * @{
  */
@@ -90,7 +83,7 @@ static const timer_conf_t timer_config[] = {
 #define TIMER_0_ISR         isr_tim2
 #define TIMER_1_ISR         isr_tim3
 
-#define TIMER_NUMOF         (sizeof(timer_config) / sizeof(timer_config[0]))
+#define TIMER_NUMOF         ARRAY_SIZE(timer_config)
 /** @} */
 
 /**
@@ -119,7 +112,7 @@ static const uart_conf_t uart_config[] = {
 #define UART_0_ISR          (isr_usart2)
 #define UART_1_ISR          (isr_usart1)
 
-#define UART_NUMOF          (sizeof(uart_config) / sizeof(uart_config[0]))
+#define UART_NUMOF          ARRAY_SIZE(uart_config)
 /** @} */
 
 /**
@@ -158,7 +151,7 @@ static const spi_conf_t spi_config[] = {
     }
 };
 
-#define SPI_NUMOF           (sizeof(spi_config) / sizeof(spi_config[0]))
+#define SPI_NUMOF           ARRAY_SIZE(spi_config)
 /** @} */
 
 /**
@@ -180,22 +173,22 @@ static const spi_conf_t spi_config[] = {
  * @name    I2C configuration
   * @{
  */
-#define I2C_NUMOF           (1U)
-#define I2C_0_EN            1
-#define I2C_IRQ_PRIO        1
-#define I2C_APBCLK          (CLOCK_APB1)
+static const i2c_conf_t i2c_config[] = {
+    {
+        .dev            = I2C1,
+        .speed          = I2C_SPEED_NORMAL,
+        .scl_pin        = GPIO_PIN(PORT_B, 6),
+        .sda_pin        = GPIO_PIN(PORT_B, 7),
+        .bus            = APB1,
+        .rcc_mask       = RCC_APB1ENR_I2C1EN,
+        .clk            = CLOCK_APB1,
+        .irqn           = I2C1_EV_IRQn
+    }
+};
 
-/* I2C 0 device configuration */
-#define I2C_0_DEV           I2C1
-#define I2C_0_CLKEN()       (periph_clk_en(APB1, RCC_APB1ENR_I2C1EN))
-#define I2C_0_CLKDIS()      (periph_clk_dis(APB1, RCC_APB1ENR_I2C1EN))
-#define I2C_0_EVT_IRQ       I2C1_EV_IRQn
-#define I2C_0_EVT_ISR       isr_i2c1_ev
-#define I2C_0_ERR_IRQ       I2C1_ER_IRQn
-#define I2C_0_ERR_ISR       isr_i2c1_er
-/* I2C 0 pin configuration */
-#define I2C_0_SCL_PIN       GPIO_PIN(PORT_B,6)
-#define I2C_0_SDA_PIN       GPIO_PIN(PORT_B,7)
+#define I2C_0_ISR           isr_i2c1_ev
+
+#define I2C_NUMOF           ARRAY_SIZE(i2c_config)
 /** @} */
 
 #ifdef __cplusplus

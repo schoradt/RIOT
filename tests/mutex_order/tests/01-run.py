@@ -7,11 +7,9 @@
 # General Public License v2.1. See the file LICENSE in the top level
 # directory for more details.
 
-import os
 import sys
+from testrunner import run
 
-sys.path.append(os.path.join(os.environ['RIOTBASE'], 'dist/tools/testrunner'))
-import testrunner
 
 thread_prio = {
         3:  6,
@@ -20,6 +18,7 @@ thread_prio = {
         6:  2,
         7:  1
         }
+
 
 def testfunc(child):
     for k in thread_prio.keys():
@@ -31,5 +30,6 @@ def testfunc(child):
         assert(int(child.match.group(1)) > last)
         last = int(child.match.group(1))
 
+
 if __name__ == "__main__":
-    sys.exit(testrunner.run(testfunc))
+    sys.exit(run(testfunc))

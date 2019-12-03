@@ -31,7 +31,9 @@
 
 
 /**
- * @ingroup     sys_hashes
+ * @defgroup    sys_hashes_sha256 SHA-256
+ * @ingroup     sys_hashes_unkeyed
+ * @brief       Implementation of the SHA-256 hashing function
  * @{
  *
  * @file
@@ -47,11 +49,15 @@
 #define HASHES_SHA256_H
 
 #include <inttypes.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @brief   Length of SHA256 digests in bytes
+ */
 #define SHA256_DIGEST_LENGTH 32
 
 /**
@@ -60,7 +66,7 @@ extern "C" {
 #define SHA256_INTERNAL_BLOCK_SIZE (64)
 
 /**
- * @brief Context for ciper operations based on sha256
+ * @brief Context for cipher operations based on sha256
  */
 typedef struct {
     /** global state */
@@ -118,7 +124,7 @@ void sha256_final(sha256_context_t *ctx, void *digest);
 
 /**
  * @brief A wrapper function to simplify the generation of a hash, this is
- * usefull for generating sha256 for one buffer
+ * useful for generating sha256 for one buffer
  *
  * @param[in] data   pointer to the buffer to generate hash from
  * @param[in] len    length of the buffer

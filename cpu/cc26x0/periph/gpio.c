@@ -22,14 +22,16 @@
 #include "cpu.h"
 #include "periph/gpio.h"
 
-#define GPIO_ISR_CHAN_NUMOF     (32)
-
 #define DOE_SHIFT               (29U)
+
+#ifdef MODULE_PERIPH_GPIO_IRQ
+#define GPIO_ISR_CHAN_NUMOF     (32)
 
 /**
  * @brief   static callback memory
  */
 static gpio_isr_ctx_t gpio_chan[GPIO_ISR_CHAN_NUMOF];
+#endif /* MODULE_PERIPH_GPIO_IRQ */
 
 int gpio_init(gpio_t pin, gpio_mode_t mode)
 {
@@ -47,41 +49,8 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
     IOC->CFG[pin] = mode;
     GPIO->DOE &= ~(1 << pin);
     GPIO->DOE |= ((~(mode >> DOE_SHIFT) & 0x1) << pin);
-    GPIO->DOUTCLR = (1 << pin);
 
     return 0;
-}
-
-int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
-                   gpio_cb_t cb, void *arg)
-{
-    int init = gpio_init(pin, mode);
-    if (init != 0)
-        return init;
-
-    NVIC_EnableIRQ(EDGE_DETECT_IRQN);
-
-    IOC->CFG[pin] |= flank;
-
-    gpio_chan[pin].cb = cb;
-    gpio_chan[pin].arg = arg;
-
-    /* clears the interrupt flag */
-    GPIO->EVFLAGS |= (1 << pin);
-
-    gpio_irq_enable(pin);
-
-    return 0;
-}
-
-void gpio_irq_enable(gpio_t pin)
-{
-    IOC->CFG[pin] |= IOCFG_EDGEIRQ_ENABLE;
-}
-
-void gpio_irq_disable(gpio_t pin)
-{
-    IOC->CFG[pin] &= ~IOCFG_EDGEIRQ_ENABLE;
 }
 
 int gpio_read(gpio_t pin)
@@ -118,6 +87,39 @@ void gpio_write(gpio_t pin, int value)
     }
 }
 
+#ifdef MODULE_PERIPH_GPIO_IRQ
+int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
+                   gpio_cb_t cb, void *arg)
+{
+    int init = gpio_init(pin, mode);
+    if (init != 0)
+        return init;
+
+    NVIC_EnableIRQ(EDGE_DETECT_IRQN);
+
+    IOC->CFG[pin] |= flank;
+
+    gpio_chan[pin].cb = cb;
+    gpio_chan[pin].arg = arg;
+
+    /* clears the interrupt flag */
+    GPIO->EVFLAGS |= (1 << pin);
+
+    gpio_irq_enable(pin);
+
+    return 0;
+}
+
+void gpio_irq_enable(gpio_t pin)
+{
+    IOC->CFG[pin] |= IOCFG_EDGEIRQ_ENABLE;
+}
+
+void gpio_irq_disable(gpio_t pin)
+{
+    IOC->CFG[pin] &= ~IOCFG_EDGEIRQ_ENABLE;
+}
+
 void isr_edge(void)
 {
     for (unsigned pin = 0; pin < GPIO_ISR_CHAN_NUMOF; pin++) {
@@ -129,3 +131,4 @@ void isr_edge(void)
     }
     cortexm_isr_end();
 }
+#endif /* MODULE_PERIPH_GPIO_IRQ */

@@ -7,9 +7,9 @@
  */
 
 /**
- * @defgroup    core_sched Scheduler
- * @ingroup     core
- * @brief       The RIOT scheduler
+ * @defgroup    core_sched_native Scheduler for native
+ * @ingroup     core_sched
+ * @brief       The RIOT scheduler for the native platform
  * @details
  *
  * @{
@@ -48,6 +48,14 @@ inline int sched_yield(void)
     puts("[ERROR] sched_yield called (defined in sched.h)\n");
     return 0;
 }
+#else
+/**
+ * @brief Compilation with g++ may require the declaration of this function.
+ *
+ * If implementation of this function is required, it can be realized in
+ * thread_arch.c.
+ */
+extern int sched_yield(void);
 #endif /* BOARD_NATIVE */
 
 #ifdef __cplusplus

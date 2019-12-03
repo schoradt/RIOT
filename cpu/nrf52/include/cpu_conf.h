@@ -7,7 +7,9 @@
  */
 
 /**
- * @ingroup     cpu_nrf52
+ * @defgroup        cpu_nrf52 Nordic nRF52 MCU
+ * @ingroup         cpu
+ * @brief           Nordic nRF52 family of CPUs
  * @{
  *
  * @file
@@ -60,6 +62,13 @@ extern "C" {
 #elif defined(CPU_MODEL_NRF52840XXAA)
 #define FLASHPAGE_NUMOF                 (256U)
 #endif
+
+/* The minimum block size which can be written is 4B. However, the erase
+ * block is always FLASHPAGE_SIZE.
+ */
+#define FLASHPAGE_RAW_BLOCKSIZE    (4U)
+/* Writing should be always 4 bytes aligned */
+#define FLASHPAGE_RAW_ALIGNMENT    (4U)
 /** @} */
 
 /**
@@ -74,6 +83,16 @@ extern "C" {
 #endif /* DONT_OVERRIDE_NVIC */
 #endif /* SOFTDEVICE_PRESENT */
 /** @} */
+
+/**
+ * @brief   Put the CPU in the low-power 'wait for event' state
+ */
+static inline void nrf52_sleep(void)
+{
+    __SEV();
+    __WFE();
+    __asm("nop");
+}
 
 #ifdef __cplusplus
 }

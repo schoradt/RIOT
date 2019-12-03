@@ -24,34 +24,63 @@
 #include "thread.h"
 #include "msg.h"
 
-#define Q_LEN           (8)
 #define TRICKLE_MSG     (0xfeef)
 #define TR_IMIN         (8)
 #define TR_IDOUBLINGS   (20)
 #define TR_REDCONST     (10)
+#define FIRST_ROUND     (5)
+#define SECOND_ROUND    (12)
 
-static msg_t _msg_q[Q_LEN];
+static uint32_t old_t = 0;
+static bool error = false;
+
+static void callback(void *args);
+
+static trickle_t trickle = { .callback = { .func = &callback,
+                                           .args = NULL } };
 
 static void callback(void *args)
 {
     (void) args;
-    printf("now: %" PRIu32 "\n", xtimer_now_usec());
+    uint32_t now = xtimer_now_usec();
+
+    printf("now = %" PRIu32 ", t = %" PRIu32 "\n", now, trickle.t);
+
+    /* previous `t` is chosen from a smaller interval [I/2, I).
+     * Current `t` is chosen from interval [I, 2*I).
+     * Hence, `old_t` must be smaller than current `t` */
+    if (old_t >= trickle.t) {
+        error = true;
+    }
+
+    old_t = trickle.t;
+
     return;
 }
-
-static trickle_t trickle = { .callback.func = &callback,
-                             .callback.args = NULL };
 
 int main(void)
 {
     msg_t msg;
-
-    msg_init_queue(_msg_q, Q_LEN);
+    unsigned counter = 0;
 
     trickle_start(sched_active_pid, &trickle, TRICKLE_MSG, TR_IMIN,
                   TR_IDOUBLINGS, TR_REDCONST);
 
-    while (1) {
+    puts("[START]");
+
+    while (!error) {
+        if (counter == FIRST_ROUND) {
+            old_t = 0;
+            trickle_reset_timer(&trickle);
+            puts("[TRICKLE_RESET]");
+        }
+        else if (counter == SECOND_ROUND) {
+            puts("[SUCCESS]");
+            return 0;
+        }
+
+        counter++;
+
         msg_receive(&msg);
 
         switch (msg.type) {
@@ -63,5 +92,7 @@ int main(void)
         }
     }
 
-    return 0;
+    puts("[FAILURE]");
+
+    return 1;
 }

@@ -83,22 +83,44 @@ extern "C" {
  * @name Timer peripheral configuration
  * @{
  */
-#define TIMER_NUMOF         (2U)
-#define TIMER_0_EN          1
-#define TIMER_1_EN          1
+static const tc32_conf_t timer_config[] = {
+    {   /* Timer 0 - System Clock */
+        .dev            = TC3,
+        .irq            = TC3_IRQn,
+        .pm_mask        = PM_APBCMASK_TC3,
+        .gclk_ctrl      = GCLK_CLKCTRL_ID_TCC2_TC3,
+#if CLOCK_USE_PLL || CLOCK_USE_XOSC32_DFLL
+        .gclk_src       = GCLK_CLKCTRL_GEN(1),
+        .prescaler      = TC_CTRLA_PRESCALER_DIV1,
+#else
+        .gclk_src       = GCLK_CLKCTRL_GEN(0),
+        .prescaler      = TC_CTRLA_PRESCALER_DIV8,
+#endif
+        .flags          = TC_CTRLA_MODE_COUNT16,
+    },
+    {   /* Timer 1 */
+        .dev            = TC4,
+        .irq            = TC4_IRQn,
+        .pm_mask        = PM_APBCMASK_TC4 | PM_APBCMASK_TC5,
+        .gclk_ctrl      = GCLK_CLKCTRL_ID_TC4_TC5,
+#if CLOCK_USE_PLL || CLOCK_USE_XOSC32_DFLL
+        .gclk_src       = GCLK_CLKCTRL_GEN(1),
+        .prescaler      = TC_CTRLA_PRESCALER_DIV1,
+#else
+        .gclk_src       = GCLK_CLKCTRL_GEN(0),
+        .prescaler      = TC_CTRLA_PRESCALER_DIV8,
+#endif
+        .flags          = TC_CTRLA_MODE_COUNT32,
+    }
+};
 
-/* Timer 0 configuration */
-#define TIMER_0_DEV         TC3->COUNT16
-#define TIMER_0_CHANNELS    2
-#define TIMER_0_MAX_VALUE   (0xffff)
+#define TIMER_0_MAX_VALUE   0xffff
+
+/* interrupt function name mapping */
 #define TIMER_0_ISR         isr_tc3
-
-/* Timer 1 configuration */
-#define TIMER_1_DEV         TC4->COUNT32
-#define TIMER_1_CHANNELS    2
-#define TIMER_1_MAX_VALUE   (0xffffffff)
 #define TIMER_1_ISR         isr_tc4
 
+#define TIMER_NUMOF         ARRAY_SIZE(timer_config)
 /** @} */
 
 /**
@@ -132,7 +154,7 @@ static const uart_conf_t uart_config[] = {
 #define UART_0_ISR          isr_sercom5
 #define UART_1_ISR          isr_sercom0
 
-#define UART_NUMOF          (sizeof(uart_config) / sizeof(uart_config[0]))
+#define UART_NUMOF          ARRAY_SIZE(uart_config)
 /** @} */
 
 /**
@@ -193,30 +215,28 @@ static const spi_conf_t spi_config[] = {
     }
 };
 
-#define SPI_NUMOF           (sizeof(spi_config) / sizeof(spi_config[0]))
+#define SPI_NUMOF           ARRAY_SIZE(spi_config)
 /** @} */
 
 /**
  * @name I2C configuration
  * @{
  */
-#define I2C_NUMOF          (1U)
-#define I2C_0_EN            1
-#define I2C_1_EN            0
-#define I2C_2_EN            0
-#define I2C_3_EN            0
-#define I2C_IRQ_PRIO        1
 
-#define I2C_0_DEV           SERCOM3->I2CM
-#define I2C_0_IRQ           SERCOM3_IRQn
-#define I2C_0_ISR           isr_sercom3
-/* I2C 0 GCLK */
-#define I2C_0_GCLK_ID       SERCOM3_GCLK_ID_CORE
-#define I2C_0_GCLK_ID_SLOW  SERCOM3_GCLK_ID_SLOW
-/* I2C 0 pin configuration */
-#define I2C_0_SDA           GPIO_PIN(PA, 22)
-#define I2C_0_SCL           GPIO_PIN(PA, 23)
-#define I2C_0_MUX           GPIO_MUX_C
+static const i2c_conf_t i2c_config[] = {
+    {
+        .dev      = &(SERCOM3->I2CM),
+        .speed    = I2C_SPEED_FAST,
+        .scl_pin  = GPIO_PIN(PA, 23),
+        .sda_pin  = GPIO_PIN(PA, 22),
+        .mux      = GPIO_MUX_C,
+        .gclk_src = GCLK_CLKCTRL_GEN_GCLK0,
+        .flags    = I2C_FLAG_NONE
+    }
+};
+
+#define I2C_NUMOF           ARRAY_SIZE(i2c_config)
+/** @} */
 
 /**
  * @name RTC configuration
@@ -238,6 +258,20 @@ static const spi_conf_t spi_config[] = {
 #define RTT_MAX_VALUE       (0xffffffff)
 #define RTT_FREQUENCY       (32768U)    /* in Hz. For changes see `rtt.c` */
 #define RTT_RUNSTDBY        (1)         /* Keep RTT running in sleep states */
+/** @} */
+
+/**
+ * @name USB peripheral configuration
+ * @{
+ */
+static const sam0_common_usb_config_t sam_usbdev_config[] = {
+    {
+        .dm     = GPIO_PIN(PA, 24),
+        .dp     = GPIO_PIN(PA, 25),
+        .d_mux  = GPIO_MUX_G,
+        .device = &USB->DEVICE,
+    }
+};
 /** @} */
 
 #ifdef __cplusplus

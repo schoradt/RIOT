@@ -10,6 +10,7 @@
 /**
  * @defgroup    drivers_hdc1000 HDC1000 Humidity and Temperature Sensor
  * @ingroup     drivers_sensors
+ * @ingroup     drivers_saul
  * @brief       Driver for the TI HDC1000 Humidity and Temperature Sensor
  *
  * The driver will initialize the sensor for best resolution (14 bit). Currently
@@ -25,6 +26,8 @@
  *
  * @note        The driver does currently not support using the devices heating
  *              unit.
+ *
+ * This driver provides @ref drivers_saul capabilities.
  *
  * @{
  *
@@ -88,9 +91,10 @@ typedef enum {
  * @brief   Parameters needed for device initialization
  */
 typedef struct {
-    i2c_t i2c;              /**< bus the device is connected to */
-    uint8_t addr;           /**< address on that bus */
-    hdc1000_res_t res;      /**< resolution used for sampling temp and hum */
+    i2c_t i2c;               /**< bus the device is connected to */
+    uint8_t addr;            /**< address on that bus */
+    hdc1000_res_t res;       /**< resolution used for sampling temp and hum */
+    uint32_t renew_interval; /**< interval for cache renewal */
 } hdc1000_params_t;
 
 /**
@@ -152,6 +156,23 @@ int hdc1000_get_results(const hdc1000_t *dev, int16_t *temp, int16_t *hum);
  * @return                  HDC1000_BUSERR on I2C communication failures
  */
 int hdc1000_read(const hdc1000_t *dev, int16_t *temp, int16_t *hum);
+
+/**
+ * @brief   Extended read function including caching capability
+ *
+ * This function will return cached values if they are within the sampling
+ * period (HDC1000_PARAM_RENEW_INTERVAL), or will trigger a new conversion,
+ * wait for the conversion to be finished and the get the results from the
+ * device.
+ *
+ * @param[in]  dev          device descriptor of sensor
+ * @param[out] temp         temperature [in 100 * degree centigrade]
+ * @param[out] hum          humidity [in 100 * percent relative]
+ *
+ * @return                  HDC1000_OK on success
+ * @return                  HDC1000_BUSERR on I2C communication failures
+ */
+int hdc1000_read_cached(const hdc1000_t *dev, int16_t *temp, int16_t *hum);
 
 #ifdef __cplusplus
 }

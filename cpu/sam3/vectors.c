@@ -7,7 +7,7 @@
  */
 
 /**
- * @ingroup     cpu_sam3x8e
+ * @ingroup     cpu_sam3
  * @{
  *
  * @file
@@ -20,9 +20,6 @@
 
 #include <stdint.h>
 #include "vectors_cortexm.h"
-
-/* get the start of the ISR stack as defined in the linkerscript */
-extern uint32_t _estack;
 
 /* define a local dummy handler as it needs to be in the same compilation unit
  * as the alias definition */

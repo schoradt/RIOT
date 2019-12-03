@@ -7,15 +7,12 @@
  */
 
 /**
- * @defgroup    net_gnrc_sock   GNRC-specific implementation of the sock API
- * @ingroup     net_gnrc
- * @brief       Provides an implementation of the @ref net_sock by the
- *              @ref net_gnrc
+ * @ingroup     net_gnrc_sock
  *
  * @{
  *
  * @file
- * @brief   GNRC-specific types and function definitions
+ * @brief   Internal GNRC-specific types and function definitions
  *
  * @author  Martine Lenders <mlenders@inf.fu-berlin.de>
  */
@@ -24,6 +21,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include "mbox.h"
 #include "net/af.h"
 #include "net/gnrc.h"
@@ -94,6 +92,25 @@ static inline bool gnrc_ep_addr_any(const sock_ip_ep_t *ep)
         }
     }
     return true;
+}
+
+/**
+ * @brief   Initializes a sock end-point from a given and sets the network
+ *          interface implicitly if there is only one potential interface.
+ * @internal
+ */
+static inline void gnrc_ep_set(sock_ip_ep_t *out, const sock_ip_ep_t *in,
+                               size_t in_size)
+{
+    memcpy(out, in, in_size);
+#if GNRC_NETIF_NUMOF == 1
+    /* set interface implicitly */
+    gnrc_netif_t *netif = gnrc_netif_iter(NULL);
+
+    if (netif != NULL) {
+        out->netif = netif->pid;
+    }
+#endif
 }
 
 /**

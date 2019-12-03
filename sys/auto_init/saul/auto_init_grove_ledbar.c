@@ -8,7 +8,7 @@
  */
 
 /**
- * @ingroup     auto_init_saul
+ * @ingroup     sys_auto_init_saul
  * @{
  *
  * @file
@@ -21,6 +21,7 @@
 
 #ifdef MODULE_GROVE_LEDBAR
 
+#include "assert.h"
 #include "log.h"
 #include "saul_reg.h"
 
@@ -30,7 +31,7 @@
 /**
  * @brief   Define the number of configured sensors
  */
-#define GROVE_LEDBAR_NUM     (sizeof(grove_ledbar_params) / sizeof(grove_ledbar_params[0]))
+#define GROVE_LEDBAR_NUM     ARRAY_SIZE(grove_ledbar_params)
 
 /**
  * @brief   Allocate memory for the device descriptors
@@ -43,12 +44,19 @@ static grove_ledbar_t grove_ledbar_devs[GROVE_LEDBAR_NUM];
 static saul_reg_t saul_entries[GROVE_LEDBAR_NUM];
 
 /**
+ * @brief   Define the number of saul info
+ */
+#define GROVE_LEDBAR_INFO_NUM ARRAY_SIZE(grove_ledbar_saul_info)
+
+/**
  * @brief   Reference the driver struct
  */
 extern const saul_driver_t grove_ledbar_saul_driver;
 
 void auto_init_grove_ledbar(void)
 {
+    assert(GROVE_LEDBAR_NUM == GROVE_LEDBAR_INFO_NUM);
+
     for (unsigned i = 0; i < GROVE_LEDBAR_NUM; i++) {
         LOG_DEBUG("[auto_init_saul] initializing Grove LED bar #%u: ", i);
 

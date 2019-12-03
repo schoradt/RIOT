@@ -7,7 +7,7 @@
  */
 
 /**
- * @ingroup     nz32-sc151
+ * @ingroup     boards_nz32-sc151
  * @{
  *
  * @file
@@ -20,6 +20,7 @@
 #define PERIPH_CONF_H
 
 #include "periph_cpu.h"
+#include "cfg_timer_tim5.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,25 +48,6 @@ extern "C" {
 #define CLOCK_AHB           (CLOCK_CORECLOCK / 1)
 #define CLOCK_APB1          (CLOCK_CORECLOCK / 1)
 #define CLOCK_APB2          (CLOCK_CORECLOCK / 1)
-/** @} */
-
-/**
- * @name    Timer configuration
- * @{
- */
-static const timer_conf_t timer_config[] = {
-    {
-        .dev      = TIM5,
-        .max      = 0xffffffff,
-        .rcc_mask = RCC_APB1ENR_TIM5EN,
-        .bus      = APB1,
-        .irqn     = TIM5_IRQn
-    }
-};
-
-#define TIMER_0_ISR         (isr_tim5)
-
-#define TIMER_NUMOF         (sizeof(timer_config) / sizeof(timer_config[0]))
 /** @} */
 
 /**
@@ -109,7 +91,7 @@ static const uart_conf_t uart_config[] = {
 #define UART_1_ISR          (isr_usart2)
 #define UART_2_ISR          (isr_usart1)
 
-#define UART_NUMOF          (sizeof(uart_config) / sizeof(uart_config[0]))
+#define UART_NUMOF          ARRAY_SIZE(uart_config)
 /** @} */
 
 /**
@@ -129,7 +111,7 @@ static const pwm_conf_t pwm_config[] = {
     }
 };
 
-#define PWM_NUMOF           (sizeof(pwm_config) / sizeof(pwm_config[0]))
+#define PWM_NUMOF           ARRAY_SIZE(pwm_config)
 /** @} */
 
 /**
@@ -189,34 +171,31 @@ static const spi_conf_t spi_config[] = {
     }
 };
 
-#define SPI_NUMOF           (sizeof(spi_config) / sizeof(spi_config[0]))
+#define SPI_NUMOF           ARRAY_SIZE(spi_config)
 /** @} */
 
 /**
  * @name    I2C configuration
   * @{
  */
-#define I2C_NUMOF           (1)
-#define I2C_0_EN            1
-#define I2C_IRQ_PRIO        1
-#define I2C_APBCLK          (36000000U)  /* Configurable from 2MHz to 50Mhz, steps of 2Mhz */
-
-/* I2C 0 device configuration */
-#define I2C_0_EVT_ISR       isr_i2c1_ev
-#define I2C_0_ERR_ISR       isr_i2c1_er
-
 static const i2c_conf_t i2c_config[] = {
-    /* device, port, scl-, sda-pin-number, I2C-AF, ER-IRQn, EV-IRQn */
-    {I2C1, GPIO_PIN(PORT_B,  8), GPIO_PIN(PORT_B,  9),
-     GPIO_OD_PU, GPIO_AF4, I2C1_ER_IRQn, I2C1_EV_IRQn}
+    {
+        .dev            = I2C1,
+        .speed          = I2C_SPEED_NORMAL,
+        .scl_pin        = GPIO_PIN(PORT_B, 8),
+        .sda_pin        = GPIO_PIN(PORT_B, 9),
+        .scl_af         = GPIO_AF4,
+        .sda_af         = GPIO_AF4,
+        .bus            = APB1,
+        .rcc_mask       = RCC_APB1ENR_I2C1EN,
+        .clk            = CLOCK_APB1,
+        .irqn           = I2C1_EV_IRQn
+    }
 };
-/** @} */
 
-/**
- * @name    RTC configuration
- * @{
- */
-#define RTC_NUMOF           (1U)
+#define I2C_0_ISR           isr_i2c1_ev
+
+#define I2C_NUMOF           ARRAY_SIZE(i2c_config)
 /** @} */
 
 /**
@@ -245,7 +224,7 @@ static const dac_conf_t dac_config[] = {
     { .pin = GPIO_PIN(PORT_A,  5), .chan = 1 }
 };
 
-#define DAC_NUMOF           (sizeof(dac_config) / sizeof(dac_config[0]))
+#define DAC_NUMOF           ARRAY_SIZE(dac_config)
 /** @} */
 
 

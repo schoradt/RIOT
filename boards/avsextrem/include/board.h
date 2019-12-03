@@ -9,9 +9,7 @@
 
 
 /**
- * @defgroup    boards_avsextrem Avsextrem
- * @ingroup     boards
- * @brief       Support for the Avsextrem board
+ * @ingroup     boards_avsextrem
  * @{
  *
  * @file
@@ -49,11 +47,6 @@ extern "C" {
 #define LED1_ON             (FIO3CLR  = LED1_MASK)
 #define LED1_TOGGLE         (FIO3PIN ^= LED1_MASK)
 /** @} */
-
-/**
- * @brief   Initialize the board's clock system
- */
-void init_clks1(void);
 
 #ifdef __cplusplus
 }

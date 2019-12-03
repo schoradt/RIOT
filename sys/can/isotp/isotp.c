@@ -33,18 +33,6 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-#ifndef CAN_ISOTP_BS
-#define CAN_ISOTP_BS 10
-#endif
-
-#ifndef CAN_ISOTP_STMIN
-#define CAN_ISOTP_STMIN 5
-#endif
-
-#ifndef CAN_ISOTP_WFTMAX
-#define CAN_ISOTP_WFTMAX 0
-#endif
-
 #ifndef CAN_ISOTP_MSG_QUEUE_SIZE
 #define CAN_ISOTP_MSG_QUEUE_SIZE 64
 #endif
@@ -509,7 +497,7 @@ static void _isotp_fill_dataframe(struct isotp *isotp, struct can_frame *frame, 
     frame->can_id = isotp->opt.tx_id;
     frame->can_dlc = num_bytes + pci_len;
 
-    DEBUG("_isotp_fill_dataframe: num_bytes=%d, pci_len=%d\n", num_bytes, pci_len);
+    DEBUG("_isotp_fill_dataframe: num_bytes=%d, pci_len=%d\n", (unsigned)num_bytes, (unsigned)pci_len);
 
     if (num_bytes < space) {
         if (isotp->opt.flags & CAN_ISOTP_TX_PADDING) {
@@ -609,6 +597,7 @@ static void _isotp_rx_timeout_task(struct isotp *isotp)
     case ISOTP_SENDING_FC:
         DEBUG("_isotp_rx_timeout_task: FC tx conf timeout\n");
         raw_can_abort(isotp->entry.ifnum, isotp->rx.tx_handle);
+        /* Fall through */
     case ISOTP_WAIT_CF:
         DEBUG("_isotp_rx_timeout_task: free rx buf\n");
         gnrc_pktbuf_release(isotp->rx.snip);
@@ -791,7 +780,8 @@ int isotp_send(struct isotp *isotp, const void *buf, int len, int flags)
     return len;
 }
 
-int isotp_bind(struct isotp *isotp, can_reg_entry_t *entry, void *arg)
+int isotp_bind(struct isotp *isotp, can_reg_entry_t *entry, void *arg,
+               struct isotp_fc_options *fc_options)
 {
     int ret;
 
@@ -815,13 +805,13 @@ int isotp_bind(struct isotp *isotp, can_reg_entry_t *entry, void *arg)
     memset(&isotp->rx, 0, sizeof(struct tpcon));
     memset(&isotp->tx, 0, sizeof(struct tpcon));
 
-    isotp->rxfc.bs = CAN_ISOTP_BS;
-    isotp->rxfc.stmin = CAN_ISOTP_STMIN;
+    isotp->rxfc.bs = fc_options ? fc_options->bs : CAN_ISOTP_BS;
+    isotp->rxfc.stmin = fc_options ? fc_options->stmin : CAN_ISOTP_STMIN;
     isotp->rxfc.wftmax = 0;
 
     isotp->txfc.bs = 0;
     isotp->txfc.stmin = 0;
-    isotp->txfc.wftmax = CAN_ISOTP_WFTMAX;
+    isotp->txfc.wftmax = fc_options ? fc_options->wftmax : CAN_ISOTP_WFTMAX;
 
     isotp->entry.ifnum = entry->ifnum;
 #ifdef MODULE_CAN_MBOX
@@ -877,6 +867,7 @@ int isotp_release(struct isotp *isotp)
         .can_mask = 0xFFFFFFFF,
     };
     raw_can_unsubscribe_rx(isotp->entry.ifnum, &filter, isotp_pid, isotp);
+    xtimer_remove(&isotp->rx_timer);
 
     if (isotp->rx.snip) {
         DEBUG("isotp_release: freeing rx buf\n");
@@ -885,6 +876,8 @@ int isotp_release(struct isotp *isotp)
     }
     isotp->rx.state = ISOTP_IDLE;
     isotp->entry.target.pid = KERNEL_PID_UNDEF;
+
+    xtimer_remove(&isotp->tx_timer);
 
     mutex_lock(&lock);
     LL_DELETE(isotp_list, isotp);

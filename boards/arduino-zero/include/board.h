@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    boards_arduino-zero Arduino Zero
- * @ingroup     boards
- * @brief       Support for the Arduino Zero board.
+ * @ingroup     boards_arduino-zero
  * @{
  *
  * @file
@@ -35,7 +33,7 @@ extern "C" {
  * @name    xtimer configuration
  * @{
  */
-#define XTIMER              TIMER_DEV(1)
+#define XTIMER_DEV          TIMER_DEV(1)
 #define XTIMER_CHAN         (0)
 /** @} */
 

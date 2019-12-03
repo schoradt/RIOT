@@ -29,9 +29,6 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-/* guard file in case no timers are defined */
-#if TIMER_NUMOF
-
 /**
  * @brief Struct holding the configuration data
  * @{
@@ -83,7 +80,7 @@ int timer_init(tim_t dev, unsigned long freq, timer_cb_t cb, void *arg)
     unsigned int timer_base;
     unsigned int timer_side = TIMER_A;
     unsigned int timer_cfg = TIMER_CFG_SPLIT_PAIR | TIMER_CFG_A_PERIODIC_UP | TIMER_TAMR_TAMIE;
-    unsigned int timer_max_val;
+    unsigned int timer_max_val = 0;
     unsigned int timer_intbit = TIMER_TIMA_TIMEOUT | TIMER_TIMA_MATCH;
 
     switch(dev){
@@ -127,6 +124,8 @@ int timer_init(tim_t dev, unsigned long freq, timer_cb_t cb, void *arg)
 
 int timer_set_absolute(tim_t dev, int channel, unsigned int value)
 {
+    (void) channel;
+
     unsigned int timer_base;
     unsigned int timer_side = TIMER_A;
     unsigned long long scaledv;
@@ -164,11 +163,13 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value)
     ROM_TimerMatchSet(timer_base, timer_side, (unsigned long) (scaledv & 0xFFFFFFFF));
     ROM_TimerEnable(timer_base, timer_side);
 
-    return 1;
+    return 0;
 }
 
 int timer_clear(tim_t dev, int channel)
 {
+    (void) channel;
+
     unsigned int timer_intbit = TIMER_TIMA_TIMEOUT;
     unsigned int timer_base;
 
@@ -193,7 +194,7 @@ int timer_clear(tim_t dev, int channel)
     }
 
     ROM_TimerIntClear(timer_base, timer_intbit);
-    return 1;
+    return 0;
 }
 
 unsigned int timer_read(tim_t dev)
@@ -340,6 +341,4 @@ void isr_wtimer1a(void)
     cortexm_isr_end();
 }
 #endif /* TIMER_1_EN */
-
-#endif /* TIMER_NUMOF */
 /** @} */

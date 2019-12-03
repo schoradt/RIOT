@@ -11,7 +11,7 @@
  * @ingroup     net_gnrc
  * @brief       Protocol type definitions and helper functions
  *
- * The protocol types are used with the @ref net_gnrc_netapi, the @ref net_gnrc_netdev,
+ * The protocol types are used with the @ref net_gnrc_netapi, the @ref net_gnrc_netif,
  * the @ref net_gnrc_netreg, and the @ref net_gnrc_pkt to identify network protocols
  * throughout the network stack.
  *
@@ -55,6 +55,17 @@ typedef enum {
 #ifdef MODULE_GNRC_SIXLOWPAN
     GNRC_NETTYPE_SIXLOWPAN,     /**< Protocol is 6LoWPAN */
 #endif
+
+    /**
+     * @{
+     * @name Link layer
+     */
+#ifdef MODULE_GNRC_GOMACH
+    GNRC_NETTYPE_GOMACH,         /**< Protocol is GoMacH */
+#endif
+    /**
+     * @}
+     */
 
     /**
      * @{
@@ -104,6 +115,10 @@ typedef enum {
                                      chunk */
 #endif
 
+#ifdef MODULE_NDN_RIOT
+    GNRC_NETTYPE_NDN,           /**< Protocol is NDN */
+#endif
+
     /**
      * @{
      * @name Testing
@@ -136,9 +151,17 @@ static inline gnrc_nettype_t gnrc_nettype_from_ethertype(uint16_t type)
         case ETHERTYPE_IPV6:
             return GNRC_NETTYPE_IPV6;
 #endif
-#ifdef MODULE_CCN_LITE
+#if defined(MODULE_CCN_LITE) || defined(MODULE_NDN_RIOT)
         case ETHERTYPE_NDN:
+#if defined(MODULE_CCN_LITE)
             return GNRC_NETTYPE_CCN;
+#elif defined(MODULE_NDN_RIOT)
+            return GNRC_NETTYPE_NDN;
+#endif
+#endif
+#ifdef MODULE_GNRC_SIXLOENC
+        case ETHERTYPE_6LOENC:
+            return GNRC_NETTYPE_SIXLOWPAN;
 #endif
         default:
             return GNRC_NETTYPE_UNDEF;
@@ -159,12 +182,20 @@ static inline gnrc_nettype_t gnrc_nettype_from_ethertype(uint16_t type)
 static inline uint16_t gnrc_nettype_to_ethertype(gnrc_nettype_t type)
 {
     switch (type) {
+#ifdef MODULE_GNRC_SIXLOENC
+        case GNRC_NETTYPE_SIXLOWPAN:
+            return ETHERTYPE_6LOENC;
+#endif
 #ifdef MODULE_GNRC_IPV6
         case GNRC_NETTYPE_IPV6:
             return ETHERTYPE_IPV6;
 #endif
 #ifdef MODULE_CCN_LITE
         case GNRC_NETTYPE_CCN:
+            return ETHERTYPE_NDN;
+#endif
+#ifdef MODULE_NDN_RIOT
+        case GNRC_NETTYPE_NDN:
             return ETHERTYPE_NDN;
 #endif
         default:

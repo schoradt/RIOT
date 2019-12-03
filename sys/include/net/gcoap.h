@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 Ken Bannister. All rights reserved.
+ * Copyright (c) 2015-2017 Ken Bannister. All rights reserved.
  *               2017 Freie Universität Berlin
  *
  * This file is subject to the terms and conditions of the GNU Lesser
@@ -8,7 +8,7 @@
  */
 
 /**
- * @defgroup    net_gcoap  CoAP
+ * @defgroup    net_gcoap  Gcoap
  * @ingroup     net
  * @brief       High-level interface to CoAP messaging
  *
@@ -17,24 +17,25 @@
  * application only needs to focus on request/response handling. For a server,
  * gcoap accepts a list of resource paths with callbacks for writing the
  * response. For a client, gcoap provides a function to send a request, with a
- * callback for reading the server response. Generation of the request or
- * response requires from one to three well-defined steps, depending on
- * inclusion of a payload.
+ * callback for reading the server response.
  *
  * gcoap allocates a RIOT message processing thread, so a single instance can
  * serve multiple applications. This approach also means gcoap uses a single UDP
  * port, which supports RFC 6282 compression. Internally, gcoap depends on the
  * nanocoap package for base level structs and functionality.
  *
- * gcoap also supports the Observe extension (RFC 7641) for a server. gcoap
- * provides functions to generate and send an observe notification that are
- * similar to the functions to send a client request.
+ * gcoap supports the Observe extension (RFC 7641) for a server. gcoap provides
+ * functions to generate and send an observe notification that are similar to
+ * the functions to send a client request. gcoap also supports the Block
+ * extension (RFC 7959) with block-specific option functions as well as some
+ * helpers.
  *
  * *Contents*
  *
  * - Server Operation
  * - Client Operation
  * - Observe Server Operation
+ * - Block Operation
  * - Implementation Notes
  * - Implementation Status
  *
@@ -44,45 +45,63 @@
  * this by uncommenting the appropriate lines in gcoap's make file.
  *
  * gcoap allows an application to specify a collection of request resource paths
- * it wants to be notified about. Create an array of resources, coap_resource_t
- * structs. Use gcoap_register_listener() at application startup to pass in
- * these resources, wrapped in a gcoap_listener_t.
+ * it wants to be notified about. Create an array of resources (coap_resource_t
+ * structs) ordered by the resource path, specifically the ASCII encoding of
+ * the path characters (digit and capital precede lower case). Use
+ * gcoap_register_listener() at application startup to pass in these resources,
+ * wrapped in a gcoap_listener_t. Also see _Server path matching_ in the base
+ * [nanocoap](group__net__nanocoap.html) documentation.
  *
  * gcoap itself defines a resource for `/.well-known/core` discovery, which
- * lists all of the registered paths.
+ * lists all of the registered paths. See the _Resource list creation_ section
+ * below for more.
  *
  * ### Creating a response ###
  *
  * An application resource includes a callback function, a coap_handler_t. After
- * reading the request, the callback must use one or two functions provided by
- * gcoap to format the response, as described below. The callback *must* read
- * the request thoroughly before calling the functions, because the response
- * buffer likely reuses the request buffer. See `examples/gcoap/gcoap_cli.c`
- * for a simple example of a callback.
+ * reading the request, the callback must use functions provided by gcoap to
+ * format the response, as described below. The callback *must* read the request
+ * thoroughly before calling the functions, because the response buffer likely
+ * reuses the request buffer. See `examples/gcoap/gcoap_cli.c` for a simple
+ * example of a callback.
  *
  * Here is the expected sequence for a callback function:
  *
  * Read request completely and parse request payload, if any. Use the
  * coap_pkt_t _payload_ and _payload_len_ attributes.
  *
- * If there is a payload, follow the three steps below.
+ * If there is a payload, follow the steps below.
  *
  * -# Call gcoap_resp_init() to initialize the response.
+ * -# Use the coap_opt_add_xxx() functions to include any Options, for example
+ *    coap_opt_add_format() for Content-Format of the payload. Options *must*
+ *    be written in order by option number (see "CoAP option numbers" in
+ *    [CoAP defines](group__net__coap.html)).
+ * -# Call coap_opt_finish() to complete the PDU metadata. Retain the returned
+ *    metadata length.
  * -# Write the response payload, starting at the updated _payload_ pointer
- *    in the coap_pkt_t. If some error occurs, return a negative errno
- *    code from the handler, and gcoap will send a server error (5.00).
- * -# Call gcoap_finish() to complete the PDU after writing the payload,
- *    and return the result. gcoap will send the message.
+ *    in the coap_pkt_t, for up to _payload_len_ bytes.
+ * -# Return the sum of the metadata length and payload length. If some error
+ *    has occurred, return a negative errno code from the handler, and gcoap
+ *    will send a server error (5.00).
  *
- * If no payload, call only gcoap_response() to write the full response.
- * Alternatively, you still can use gcoap_resp_init() and gcoap_finish(), as
- * described above. In fact, the gcoap_response() function is inline, and uses
- * those two functions.
+ * If no payload, call only gcoap_response() to write the full response. If you
+ * need to add Options, follow the first three steps in the list above instead.
+ *
+ * ### Resource list creation ###
+ *
+ * gcoap allows customization of the function that provides the list of registered
+ * resources for `/.well-known/core` and CoRE Resource Directory registration.
+ * By default gcoap provides gcoap_encode_link(), which lists only the target
+ * path for each link. However, an application may specify a custom function in
+ * the gcoap_listener_t it registers with gcoap. For example, this function may
+ * add parameters to provide more information about the resource, as described
+ * in RFC 6690. See the gcoap example for use of a custom encoder function.
  *
  * ## Client Operation ##
  *
- * Client operation includes two phases:  creating and sending a request, and
- * handling the response aynchronously in a client supplied callback.  See
+ * Client operation includes two phases: creating and sending a request, and
+ * handling the response aynchronously in a client supplied callback. See
  * `examples/gcoap/gcoap_cli.c` for a simple example of sending a request and
  * reading the response.
  *
@@ -92,20 +111,26 @@
  *
  * Allocate a buffer and a coap_pkt_t for the request.
  *
- * If there is a payload, follow the three steps below.
+ * If there is a payload, follow the steps below.
  *
  * -# Call gcoap_req_init() to initialize the request.
+ * -# Optionally, mark the request confirmable by calling coap_hdr_set_type()
+ *    with COAP_TYPE_CON.
+ * -# Use the coap_opt_add_xxx() functions to include any Options beyond
+ *    Uri-Path, which was added in the first step. Options *must* be written
+ *    in order by option number (see "CoAP option numbers" in
+ *    [CoAP defines](group__net__coap.html)).
+ * -# Call coap_opt_finish() to complete the PDU metadata. Retain the returned
+ *    metadata length.
  * -# Write the request payload, starting at the updated _payload_ pointer
- *    in the coap_pkt_t.
- * -# Call gcoap_finish(), which updates the packet for the payload.
+ *    in the coap_pkt_t, for up to _payload_len_ bytes.
  *
- * If no payload, call only gcoap_request() to write the full request.
- * Alternatively, you still can use gcoap_req_init() and gcoap_finish(),
- * as described above. The gcoap_request() function is inline, and uses those
- * two functions.
+ * If no payload, call only gcoap_request() to write the full request. If you
+ * need to add Options, follow the first four steps in the list above instead.
  *
- * Finally, call gcoap_req_send2() for the destination endpoint, as well as a
- * callback function for the host's response.
+ * Finally, call gcoap_req_send() with the sum of the metadata length and
+ * payload length, the destination endpoint, and a callback function for the
+ * host's response.
  *
  * ### Handling the response ###
  *
@@ -143,11 +168,17 @@
  * -# Call gcoap_obs_init() to initialize the notification for a resource.
  *    Test the return value, which may indicate there is not an observer for
  *    the resource. If so, you are done.
+ * -# Use the coap_opt_add_xxx() functions to include any Options, for example
+ *    coap_opt_add_format() for Content-Format of the payload. Options *must*
+ *    be written in order by option number (see "CoAP option numbers" in
+ *    [CoAP defines](group__net__coap.html)).
+ * -# Call coap_opt_finish() to complete the PDU metadata. Retain the returned
+ *    metadata length.
  * -# Write the notification payload, starting at the updated _payload_ pointer
- *    in the coap_pkt_t.
- * -# Call gcoap_finish(), which updates the packet for the payload.
+ *    in the coap_pkt_t, for up to _payload_len_ bytes.
  *
- * Finally, call gcoap_obs_send() for the resource.
+ * Finally, call gcoap_obs_send() for the resource, with the sum of the
+ * metadata length and payload length for the representation.
  *
  * ### Other considerations ###
  *
@@ -155,22 +186,117 @@
  * bytes long. For resources that change slowly, this length can be reduced via
  * GCOAP_OBS_VALUE_WIDTH.
  *
- * To cancel a notification, the server expects to receive a GET request with
+ * A client always may re-register for a resource with the same token or with
+ * a new token to indicate continued interest in receiving notifications about
+ * it. Of course the client must not already be using any new token in the
+ * registration for a different resource. Successful registration always is
+ * indicated by the presence of the Observe option in the response.
+ *
+ * To cancel registration, the server expects to receive a GET request with
  * the Observe option value set to 1. The server does not support cancellation
  * via a reset (RST) response to a non-confirmable notification.
  *
+ * ## Block Operation ##
+ *
+ * gcoap provides for both server side and client side blockwise messaging for
+ * requests and responses. This section outlines how to write a message for
+ * each situation.
+ *
+ * ### CoAP server GET handling ###
+ *
+ * The server must slice the full response body into smaller payloads, and
+ * identify the slice with a Block2 option. This implementation toggles the
+ * actual writing of data as it passes over the code for the full response
+ * body. See the _riot_block2_handler() example in
+ * [gcoap-block-server](https://github.com/kb2ma/riot-apps/blob/kb2ma-master/gcoap-block-server/gcoap_block.c),
+ * which implements the sequence described below.
+ *
+ * - Use coap_block2_init() to initialize a _slicer_ struct from the Block2
+ *   option in the request. The slicer tracks boundaries while writing the
+ *   payload. If no option present in the initial request, the init function
+ *   defaults to a payload size of 16 bytes.
+ * - Use gcoap_resp_init() to begin the response.
+ * - Use coap_opt_add_block2() to write the Block2 option from the slicer. Use
+ *   1 as a default for the _more_ parameter. At this point, we don't know yet
+ *   if this message will be the last in the block exchange. However, we must
+ *   add the block option at this location in the message.
+ * - Use coap_opt_finish() to add a payload marker.
+ * - Add the payload using the `coap_blockwise_put_xxx()` functions. The slicer
+ *   knows the current position in the overall body of the response. It writes
+ *   only the portion of the body specified by the block number and block size
+ *   in the slicer.
+ * - Finally, use coap_block2_finish() to finalize the block option with the
+ *   proper value for the _more_ parameter.
+ *
+ * ### CoAP server PUT/POST handling ###
+ *
+ * The server must ack each blockwise portion of the response body received
+ * from the client by writing a Block1 option in the response. See the
+ * _sha256_handler() example in
+ * [gcoap-block-server](https://github.com/kb2ma/riot-apps/blob/kb2ma-master/gcoap-block-server/gcoap_block.c),
+ * which implements the sequence described below.
+ *
+ * - Use coap_get_block1() to initialize a block1 struct from the request.
+ * - Determine the response code. If the block1 _more_ attribute is 1, use
+ *   COAP_CODE_CONTINUE to request more responses. Otherwise, use
+ *   COAP_CODE_CHANGED to indicate a successful transfer.
+ * - Use gcoap_resp_init() to begin the response, including the response code.
+ * - Use coap_opt_add_block1_control() to write the Block1 option.
+ * - Use coap_opt_finish() to determine the length of the PDU. If appropriate,
+ *   use the COAP_OPT_FINISH_PAYLOAD parameter and then write the payload.
+ *
+ * ### CoAP client GET request ###
+ *
+ * The client requests a specific blockwise payload from the overall body by
+ * writing a Block2 option in the request. See _resp_handler() in the
+ * [gcoap](https://github.com/RIOT-OS/RIOT/blob/master/examples/gcoap/gcoap_cli.c)
+ * example in the RIOT distribution, which implements the sequence described
+ * below.
+ *
+ * - For the first request, use coap_block_object_init() to initialize a new
+ *   block1 struct. For subsequent requests, first use coap_get_block2() to
+ *   read the Block2 option in the response to the previous request. If the
+ *   _more_ attribute indicates no more blocks, you are done.
+ *   - The gcoap example actually does _not_ include a Block2 option in the
+ *     original request, but the server response includes a blockwise response
+ *     with a Block2 option anyway. On the other hand, this example shows how
+ *     blockwise messaging can be supported in a generic way.
+ * - If more blocks are available, use gcoap_req_init() to create a new
+ *   request.
+ * - Increment the _blknum_ attribute in the block1 struct from the previous
+ *   response to request the next blockwise payload.
+ * - Use coap_opt_put_block2_control() to write the Block2 option to the
+ *   request.
+ * - Use coap_opt_finish() to determine the length of the PDU.
+ *
+ * ### CoAP client PUT/POST request ###
+ *
+ * The client pushes a specific blockwise payload from the overall body to the
+ * server by writing a Block1 option in the request. See _do_block_post() in
+ * the [gcoap-block-client](https://github.com/kb2ma/riot-apps/blob/kb2ma-master/gcoap-block-client/gcoap_block.c)
+ * example, which implements the sequence described below.
+ *
+ * - For the first request, use coap_block_slicer_init() to initialize a
+ *   _slicer_ struct with the desired block number and block size. For
+ *   subsequent requests, first read the response from the server to the
+ *   previous request. If the response code is COAP_CODE_CONTINUE, then
+ *   increment the last block number sent when initializing the slicer struct
+ *   for the next request.
+ * - Use gcoap_req_init() to initialize the request.
+ * - Use coap_opt_add_block1() to add the Block1 option from the slicer. Use 1
+ *   as a default for the _more_ parameter. At this point, we don't know yet if
+ *   this message will be the last in the block exchange. However, we must add
+ *   the block option at this location in the message.
+ * - Use coap_opt_finish() with COAP_OPT_FINISH_PAYLOAD to write the payload
+ *   marker.
+ * - Add the payload using the `coap_blockwise_put_xxx()` functions. The slicer
+ *   knows the current position in the overall body of the response. It writes
+ *   only the portion of the body specified by the block number and block size
+ *   in the slicer.
+ * - Finally, use coap_block1_finish() to finalize the block option with the
+ *   proper value for the _more_ parameter.
+ *
  * ## Implementation Notes ##
- *
- * ### Building a packet ###
- *
- * The sequence and functions described above to build a request or response
- * is designed to provide a relatively simple API for the user.
- *
- * The structure of a CoAP PDU requires that options are placed between the
- * header and the payload. So, gcoap provides space in the buffer for them in
- * the request/response ...init() function, and then writes them during
- * gcoap_finish(). We trade some inefficiency/work in the buffer for
- * simplicity in the API.
  *
  * ### Waiting for a response ###
  *
@@ -211,10 +337,10 @@
 #define NET_GCOAP_H
 
 #include <stdint.h>
-#include <stdatomic.h>
+
+#include "net/ipv6/addr.h"
 #include "net/sock/udp.h"
-#include "mutex.h"
-#include "nanocoap.h"
+#include "net/nanocoap.h"
 #include "xtimer.h"
 
 #ifdef __cplusplus
@@ -222,9 +348,17 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup net_gcoap_conf    Gcoap compile configurations
+ * @ingroup  net_gcoap
+ * @ingroup  config
+ * @{
+ */
+/**
  * @brief  Size for module message queue
  */
+#ifndef GCOAP_MSG_QUEUE_SIZE
 #define GCOAP_MSG_QUEUE_SIZE    (4)
+#endif
 
 /**
  * @brief   Server port; use RFC 7252 default if not defined
@@ -241,26 +375,34 @@ extern "C" {
 #endif
 
 /**
- * @brief   Size of the buffer used to write options, other than Uri-Path, in a
- *          request
+ * @brief   Reduce payload length by this value for a request
  *
- * Accommodates Content-Format and Uri-Queries
+ * Accommodates writing Content-Format option in gcoap_finish(). May set to
+ * zero if function not used.
  */
-#define GCOAP_REQ_OPTIONS_BUF   (40)
+#ifndef GCOAP_REQ_OPTIONS_BUF
+#define GCOAP_REQ_OPTIONS_BUF   (4)
+#endif
 
 /**
- * @brief   Size of the buffer used to write options in a response
+ * @brief   Reduce payload length by this value for a response
  *
- * Accommodates Content-Format.
+ * Accommodates writing Content-Format option in gcoap_finish(). May set to
+ * zero if function not used.
  */
-#define GCOAP_RESP_OPTIONS_BUF  (8)
+#ifndef GCOAP_RESP_OPTIONS_BUF
+#define GCOAP_RESP_OPTIONS_BUF  (4)
+#endif
 
 /**
- * @brief   Size of the buffer used to write options in an Observe notification
+ * @brief   Reduce payload length by this value for an observe notification
  *
- * Accommodates Content-Format and Observe.
+ * Accommodates writing Content-Format option in gcoap_finish(). May set to
+ * zero if function not used.
  */
-#define GCOAP_OBS_OPTIONS_BUF   (8)
+#ifndef GCOAP_OBS_OPTIONS_BUF
+#define GCOAP_OBS_OPTIONS_BUF   (4)
+#endif
 
 /**
  * @brief   Maximum number of requests awaiting a response
@@ -268,6 +410,7 @@ extern "C" {
 #ifndef GCOAP_REQ_WAITING_MAX
 #define GCOAP_REQ_WAITING_MAX   (2)
 #endif
+/** @} */
 
 /**
  * @brief   Maximum length in bytes for a token
@@ -280,7 +423,10 @@ extern "C" {
 #define GCOAP_HEADER_MAXLEN     (sizeof(coap_hdr_t) + GCOAP_TOKENLEN_MAX)
 
 /**
- * @brief   Length in bytes for a token; use 2 if not defined
+ * @ingroup net_gcoap_conf
+ * @brief   Length in bytes for a token
+ *
+ * Value must be in the range 0 to @ref GCOAP_TOKENLEN_MAX.
  */
 #ifndef GCOAP_TOKENLEN
 #define GCOAP_TOKENLEN          (2)
@@ -303,13 +449,34 @@ extern "C" {
 /** @} */
 
 /**
+ * @brief   Value for send_limit in request memo when non-confirmable type
+ */
+#define GCOAP_SEND_LIMIT_NON    (-1)
+
+/**
+ * @ingroup net_gcoap_conf
  * @brief   Time in usec that the event loop waits for an incoming CoAP message
  */
 #ifndef GCOAP_RECV_TIMEOUT
 #define GCOAP_RECV_TIMEOUT      (1 * US_PER_SEC)
 #endif
 
+#ifdef DOXYGEN
 /**
+ * @ingroup net_gcoap_conf
+ * @brief   Turns off retransmission backoff when defined (undefined per default)
+ *
+ * In normal operations the timeout between retransmissions doubles. When
+ * GCOAP_NO_RETRANS_BACKOFF is defined this doubling does not happen.
+ *
+ * @see COAP_ACK_TIMEOUT
+ * @see COAP_ACK_VARIANCE
+ */
+#define GCOAP_NO_RETRANS_BACKOFF
+#endif
+
+/**
+ * @ingroup net_gcoap_conf
  * @brief   Default time to wait for a non-confirmable response [in usec]
  *
  * Set to 0 to disable timeout.
@@ -332,15 +499,16 @@ extern "C" {
 #define GCOAP_MSG_TYPE_INTR     (0x1502)
 
 /**
- * @brief   Maximum number of Observe clients; use 2 if not defined
+ * @ingroup net_gcoap_conf
+ * @brief   Maximum number of Observe clients
  */
 #ifndef GCOAP_OBS_CLIENTS_MAX
 #define GCOAP_OBS_CLIENTS_MAX   (2)
 #endif
 
 /**
- * @brief   Maximum number of registrations for Observable resources; use 2 if
- *          not defined
+ * @ingroup net_gcoap_conf
+ * @brief   Maximum number of registrations for Observable resources
  */
 #ifndef GCOAP_OBS_REGISTRATIONS_MAX
 #define GCOAP_OBS_REGISTRATIONS_MAX     (2)
@@ -356,6 +524,7 @@ extern "C" {
 /** @} */
 
 /**
+ * @ingroup net_gcoap_conf
  * @brief   Width in bytes of the Observe option value for a notification
  *
  * This width is used to determine the length of the 'tick' used to measure
@@ -402,17 +571,59 @@ extern "C" {
  * @brief Stack size for module thread
  */
 #ifndef GCOAP_STACK_SIZE
-#define GCOAP_STACK_SIZE (THREAD_STACKSIZE_DEFAULT + DEBUG_EXTRA_STACKSIZE)
+#define GCOAP_STACK_SIZE (THREAD_STACKSIZE_DEFAULT + DEBUG_EXTRA_STACKSIZE \
+                          + sizeof(coap_pkt_t))
 #endif
+
+/**
+ * @ingroup net_gcoap_conf
+ * @brief   Count of PDU buffers available for resending confirmable messages
+ */
+#ifndef GCOAP_RESEND_BUFS_MAX
+#define GCOAP_RESEND_BUFS_MAX      (1)
+#endif
+
+/**
+ * @name Bitwise positional flags for encoding resource links
+ * @{
+ */
+#define COAP_LINK_FLAG_INIT_RESLIST  (1)  /**< initialize as for first resource
+                                           *   in a list */
+/** @} */
+
+/**
+ * @brief   Context information required to write a resource link
+ */
+typedef struct {
+    unsigned content_format;            /**< link format */
+    size_t link_pos;                    /**< position of link within listener */
+    uint16_t flags;                     /**< encoder switches; see GCOAP_LINK_FLAG_*
+                                             constants */
+} coap_link_encoder_ctx_t;
+
+/**
+ * @brief   Handler function to write a resource link
+ *
+ * @param[in] resource      Resource for link
+ * @param[out] buf          Buffer on which to write; may be null
+ * @param[in] maxlen        Remaining length for @p buf
+ * @param[in] context       Contextual information on what/how to write
+ *
+ * @return  count of bytes written to @p buf (or writable if @p buf is null)
+ * @return  -1 on error
+ */
+typedef ssize_t (*gcoap_link_encoder_t)(const coap_resource_t *resource, char *buf,
+                                        size_t maxlen, coap_link_encoder_ctx_t *context);
 
 /**
  * @brief   A modular collection of resources for a server
  */
 typedef struct gcoap_listener {
-    coap_resource_t *resources;     /**< First element in the array of
-                                     *   resources; must order alphabetically */
-    size_t resources_len;           /**< Length of array */
-    struct gcoap_listener *next;    /**< Next listener in list */
+    const coap_resource_t *resources;   /**< First element in the array of
+                                         *   resources; must order alphabetically */
+    size_t resources_len;               /**< Length of array */
+    gcoap_link_encoder_t link_encoder;  /**< Writes a link for a resource */
+    struct gcoap_listener *next;        /**< Next listener in list */
 } gcoap_listener_t;
 
 /**
@@ -425,12 +636,27 @@ typedef void (*gcoap_resp_handler_t)(unsigned req_state, coap_pkt_t* pdu,
                                      sock_udp_ep_t *remote);
 
 /**
+ * @brief  Extends request memo for resending a confirmable request.
+ */
+typedef struct {
+    uint8_t *pdu_buf;                   /**< Buffer containing the PDU */
+    size_t pdu_len;                     /**< Length of pdu_buf */
+} gcoap_resend_t;
+
+/**
  * @brief   Memo to handle a response for a request
  */
 typedef struct {
     unsigned state;                     /**< State of this memo, a GCOAP_MEMO... */
-    uint8_t hdr_buf[GCOAP_HEADER_MAXLEN];
-                                        /**< Stores a copy of the request header */
+    int send_limit;                     /**< Remaining resends, 0 if none;
+                                             GCOAP_SEND_LIMIT_NON if non-confirmable */
+    union {
+        uint8_t hdr_buf[GCOAP_HEADER_MAXLEN];
+                                        /**< Copy of PDU header, if no resends */
+        gcoap_resend_t data;            /**< Endpoint and PDU buffer, for resend */
+    } msg;                              /**< Request message data; if confirmable,
+                                             supports resending message */
+    sock_udp_ep_t remote_ep;            /**< Remote endpoint */
     gcoap_resp_handler_t resp_handler;  /**< Callback for the response */
     xtimer_t response_timer;            /**< Limits wait for response */
     msg_t timeout_msg;                  /**< For response timer */
@@ -441,28 +667,10 @@ typedef struct {
  */
 typedef struct {
     sock_udp_ep_t *observer;            /**< Client endpoint; unused if null */
-    coap_resource_t *resource;          /**< Entity being observed */
+    const coap_resource_t *resource;    /**< Entity being observed */
     uint8_t token[GCOAP_TOKENLEN_MAX];  /**< Client token for notifications */
     unsigned token_len;                 /**< Actual length of token attribute */
 } gcoap_observe_memo_t;
-
-/**
- * @brief   Container for the state of gcoap itself
- */
-typedef struct {
-    mutex_t lock;                       /**< Shares state attributes safely */
-    gcoap_listener_t *listeners;        /**< List of registered listeners */
-    gcoap_request_memo_t open_reqs[GCOAP_REQ_WAITING_MAX];
-                                        /**< Storage for open requests; if first
-                                             byte of an entry is zero, the entry
-                                             is available */
-    atomic_uint next_message_id;        /**< Next message ID to use */
-    sock_udp_ep_t observers[GCOAP_OBS_CLIENTS_MAX];
-                                        /**< Observe clients; allows reuse for
-                                             observe memos */
-    gcoap_observe_memo_t observe_memos[GCOAP_OBS_REGISTRATIONS_MAX];
-                                        /**< Observed resource registrations */
-} gcoap_state_t;
 
 /**
  * @brief   Initializes the gcoap thread and device
@@ -488,20 +696,28 @@ void gcoap_register_listener(gcoap_listener_t *listener);
  * @param[out] pdu      Request metadata
  * @param[out] buf      Buffer containing the PDU
  * @param[in] len       Length of the buffer
- * @param[in] code      Request code: GCOAP_[GET|POST|PUT|DELETE]
- * @param[in] path      Resource path, *must* start with '/'
+ * @param[in] code      Request code, one of COAP_METHOD_XXX
+ * @param[in] path      Resource path, may be NULL
+ *
+ * @pre @p path must start with `/` if not NULL
  *
  * @return  0 on success
  * @return  < 0 on error
  */
 int gcoap_req_init(coap_pkt_t *pdu, uint8_t *buf, size_t len,
-                   unsigned code, char *path);
+                   unsigned code, const char *path);
 
 /**
  * @brief   Finishes formatting a CoAP PDU after the payload has been written
  *
- * Assumes the PDU has been initialized with gcoap_req_init() or
- * gcoap_resp_init().
+ * Assumes the PDU has been initialized with a gcoap_xxx_init() function, like
+ * gcoap_req_init().
+ *
+ * @warning To use this function, you only may have added an Option with
+ * option number less than COAP_OPT_CONTENT_FORMAT. Otherwise, use the
+ * struct-based API described with @link net_nanocoap nanocoap. @endlink With
+ * this API, you specify the format with coap_opt_add_uint(), prepare for the
+ * payload with coap_opt_finish(), and then write the payload.
  *
  * @param[in,out] pdu       Request metadata
  * @param[in] payload_len   Length of the payload, or 0 if none
@@ -529,7 +745,7 @@ static inline ssize_t gcoap_request(coap_pkt_t *pdu, uint8_t *buf, size_t len,
                                     unsigned code, char *path)
 {
     return (gcoap_req_init(pdu, buf, len, code, path) == 0)
-                ? gcoap_finish(pdu, 0, COAP_FORMAT_NONE)
+                ? coap_opt_finish(pdu, COAP_OPT_FINISH_NONE)
                 : -1;
 }
 
@@ -539,31 +755,35 @@ static inline ssize_t gcoap_request(coap_pkt_t *pdu, uint8_t *buf, size_t len,
  * @param[in] buf           Buffer containing the PDU
  * @param[in] len           Length of the buffer
  * @param[in] remote        Destination for the packet
- * @param[in] resp_handler  Callback when response received
+ * @param[in] resp_handler  Callback when response received, may be NULL
  *
  * @return  length of the packet
  * @return  0 if cannot send
  */
-size_t gcoap_req_send2(const uint8_t *buf, size_t len,
-                       const sock_udp_ep_t *remote,
-                       gcoap_resp_handler_t resp_handler);
+size_t gcoap_req_send(const uint8_t *buf, size_t len,
+                      const sock_udp_ep_t *remote,
+                      gcoap_resp_handler_t resp_handler);
 
 /**
- * @brief  Sends a buffer containing a CoAP request to the provided host/port
+ * @brief   Sends a buffer containing a CoAP request to the provided endpoint
  *
- * @deprecated  Please use @ref gcoap_req_send2() instead
+ * @deprecated  Migration alias for @ref gcoap_req_send(). Will be removed after
+ *              the 2020.01 release.
  *
  * @param[in] buf           Buffer containing the PDU
  * @param[in] len           Length of the buffer
- * @param[in] addr          Destination for the packet
- * @param[in] port          Port at the destination
- * @param[in] resp_handler  Callback when response received
+ * @param[in] remote        Destination for the packet
+ * @param[in] resp_handler  Callback when response received, may be NULL
  *
  * @return  length of the packet
  * @return  0 if cannot send
  */
-size_t gcoap_req_send(const uint8_t *buf, size_t len, const ipv6_addr_t *addr,
-                      uint16_t port, gcoap_resp_handler_t resp_handler);
+static inline size_t gcoap_req_send2(const uint8_t *buf, size_t len,
+                                     const sock_udp_ep_t *remote,
+                                     gcoap_resp_handler_t resp_handler)
+{
+    return gcoap_req_send(buf, len, remote, resp_handler);
+}
 
 /**
  * @brief   Initializes a CoAP response packet on a buffer
@@ -595,7 +815,7 @@ static inline ssize_t gcoap_response(coap_pkt_t *pdu, uint8_t *buf,
                                      size_t len, unsigned code)
 {
     return (gcoap_resp_init(pdu, buf, len, code) == 0)
-                ? gcoap_finish(pdu, 0, COAP_FORMAT_NONE)
+                ? coap_opt_finish(pdu, COAP_OPT_FINISH_NONE)
                 : -1;
 }
 
@@ -661,6 +881,22 @@ uint8_t gcoap_op_state(void);
  * @return  -1 on error
  */
 int gcoap_get_resource_list(void *buf, size_t maxlen, uint8_t cf);
+
+/**
+ * @brief   Writes a resource in CoRE Link Format to a provided buffer.
+ *
+ * This default implementation only writes the resource path.
+ *
+ * @param[in]  resource  resource to write
+ * @param[out] buf       output buffer to write link into, may be null
+ * @param[in]  maxlen    length of @p buf, ignored if @p buf is NULL
+ * @param[in]  context   other parameters that affect how link is written
+ *
+ * @return  count of bytes written to @p buf (or writable if @p buf is null)
+ * @return  -1 on error
+ */
+ssize_t gcoap_encode_link(const coap_resource_t *resource, char *buf,
+                          size_t maxlen, coap_link_encoder_ctx_t *context);
 
 /**
  * @brief   Adds a single Uri-Query option to a CoAP request

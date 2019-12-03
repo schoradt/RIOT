@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Feie Universität Berlin
+ * Copyright (C) 2017 Freie Universität Berlin
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    boards_nrf52840dk nRF52840 DK
- * @ingroup     boards
- * @brief       Board specific configuration for the nRF52840 DK
+ * @ingroup     boards_nrf52840dk
  * @{
  *
  * @file
@@ -22,7 +20,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "cpu.h"
+#include "board_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +40,7 @@ extern "C" {
 #define LED1_MASK           (1 << 14)
 #define LED2_MASK           (1 << 15)
 #define LED3_MASK           (1 << 16)
+#define LED_MASK            (LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK)
 
 #define LED0_ON             (LED_PORT->OUTCLR = LED0_MASK)
 #define LED0_OFF            (LED_PORT->OUTSET = LED0_MASK)
@@ -73,11 +72,6 @@ extern "C" {
 #define BTN3_PIN            GPIO_PIN(0, 25)
 #define BTN3_MODE           GPIO_IN_PU
 /** @} */
-
-/**
- * @brief   Initialize board specific hardware, including clock, LEDs and std-IO
- */
-void board_init(void);
 
 #ifdef __cplusplus
 }

@@ -7,7 +7,7 @@
  * General Public License v2.1. See the file LICENSE in the top level
  * directory for more details.
  *
- * @ingroup ps
+ * @ingroup sys_ps
  * @{
  * @file
  * @brief   UNIX like ps command
@@ -23,11 +23,12 @@
 #include "kernel_types.h"
 
 #ifdef MODULE_SCHEDSTATISTICS
-#include "xtimer.h"
+#include "schedstatistics.h"
 #endif
 
-#ifdef MODULE_TLSF
+#ifdef MODULE_TLSF_MALLOC
 #include "tlsf.h"
+#include "tlsf-malloc.h"
 #endif
 
 /* list of states copied from tcb.h */
@@ -43,6 +44,7 @@ static const char *state_names[] = {
     [STATUS_FLAG_BLOCKED_ANY] = "bl anyfl",
     [STATUS_FLAG_BLOCKED_ALL] = "bl allfl",
     [STATUS_MBOX_BLOCKED] = "bl mbox",
+    [STATUS_COND_BLOCKED] = "bl cond",
 };
 
 /**
@@ -73,9 +75,9 @@ void ps(void)
            "state");
 
 #if defined(DEVELHELP) && defined(ISR_STACKSIZE)
-    int isr_usage = thread_arch_isr_stack_usage();
-    void *isr_start = thread_arch_isr_stack_start();
-    void *isr_sp = thread_arch_isr_stack_pointer();
+    int isr_usage = thread_isr_stack_usage();
+    void *isr_start = thread_isr_stack_start();
+    void *isr_sp = thread_isr_stack_pointer();
     printf("\t  - | isr_stack            | -        - |"
            "   - | %6i (%5i) | %10p | %10p\n", ISR_STACKSIZE, isr_usage, isr_start, isr_sp);
     overall_stacksz += ISR_STACKSIZE;
@@ -98,7 +100,7 @@ void ps(void)
         thread_t *p = (thread_t *)sched_threads[i];
 
         if (p != NULL) {
-            int state = p->status;                                                 /* copy state */
+            thread_status_t state = p->status;                                     /* copy state */
             const char *sname = state_names[state];                                /* get state name */
             const char *queued = &queued_name[(int)(state >= STATUS_ON_RUNQUEUE)]; /* get queued flag */
 #ifdef DEVELHELP
@@ -144,9 +146,12 @@ void ps(void)
 #ifdef DEVELHELP
     printf("\t%5s %-21s|%13s%6s %6i (%5i)\n", "|", "SUM", "|", "|",
            overall_stacksz, overall_used);
-#   ifdef MODULE_TLSF
+#   ifdef MODULE_TLSF_MALLOC
     puts("\nHeap usage:");
-    tlsf_walk_pool(NULL);
+    tlsf_size_container_t sizes = { .free = 0, .used = 0 };
+    tlsf_walk_pool(tlsf_get_pool(_tlsf_get_global_control()), tlsf_size_walker, &sizes);
+    printf("\tTotal free size: %u\n", sizes.free);
+    printf("\tTotal used size: %u\n", sizes.used);
 #   endif
 #endif
 }

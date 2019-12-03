@@ -31,6 +31,16 @@
 #include "debug.h"
 
 /**
+ * @brief Bit positions in the GPIO mode value
+ * @{
+ */
+#define MODE_BIT_IO         (0x1)
+#define MODE_BIT_PUE        (0x2)
+#define MODE_BIT_ODE        (0x4)
+/** @} */
+
+#ifdef MODULE_PERIPH_GPIO_IRQ
+/**
  * @brief We store 4 bit for each external interrupt line (each pin) that can
  *        mapped to an entry in the exti_ctx table
  */
@@ -42,18 +52,9 @@
 #define CTX_NUMOF           (7U)
 
 /**
- * @brief Bit positions in the GPIO mode value
- * @{
- */
-#define MODE_BIT_IO         (0x1)
-#define MODE_BIT_PUE        (0x2)
-#define MODE_BIT_ODE        (0x4)
-/** @} */
-
-/**
  * @brief Allocation of memory for 7 independent interrupt slots
  */
-static gpio_isr_ctx_t exti_ctx[CTX_NUMOF] = {{0}};
+static gpio_isr_ctx_t exti_ctx[CTX_NUMOF];
 
 /**
  * @brief Allocation of 4 bit per pin to map a pin to an interrupt context
@@ -64,6 +65,49 @@ static uint32_t exti_map[EXTI_MAP_LENGTH] = {
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
 };
+
+/**
+ * @brief Get context for a specific pin
+ */
+static inline unsigned _ctx(int port, int pin)
+{
+    return (exti_map[(port * 4) + (pin >> 3)] >> ((pin & 0x7) * 4)) & 0xf;
+}
+
+/**
+ * @brief Write an entry to the context map array
+ */
+static void _write_map(int port, int pin, int ctx)
+{
+    exti_map[(port * 4) + (pin >> 3)] &= ~(0xf << ((pin & 0x7) * 4));
+    exti_map[(port * 4) + (pin >> 3)] |=  (ctx << ((pin & 0x7) * 4));
+}
+
+/**
+ * @brief Find a free spot in the array containing the interrupt contexts
+ */
+static int _get_free_ctx(void)
+{
+    for (unsigned i = 0; i < CTX_NUMOF; i++) {
+        if (exti_ctx[i].cb == NULL) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Clear the context of the given pin
+ */
+static void _ctx_clear(int port, int pin)
+{
+    unsigned ctx = _ctx(port, pin);
+    if (ctx < CTX_NUMOF) {
+        exti_ctx[ctx].cb = NULL;
+        _write_map(port, pin, CTX_NUMOF);
+    }
+}
+#endif /* MODULE_PERIPH_GPIO_IRQ */
 
 /**
  * @brief Extract the pin's port base address from the given pin identifier
@@ -103,48 +147,6 @@ static inline int _pin_num(gpio_t pin)
     return (pin & 0x1f);
 }
 
-/**
- * @brief Get context for a specific pin
- */
-static inline int _ctx(int port, int pin)
-{
-    return (exti_map[(port * 4) + (pin >> 3)] >> ((pin & 0x7) * 4)) & 0xf;
-}
-
-/**
- * @brief Write an entry to the context map array
- */
-static void _write_map(int port, int pin, int ctx)
-{
-    exti_map[(port * 4) + (pin >> 3)] &= ~(0xf << ((pin & 0x7) * 4));
-    exti_map[(port * 4) + (pin >> 3)] |=  (ctx << ((pin & 0x7) * 4));
-}
-
-/**
- * @brief Find a free spot in the array containing the interrupt contexts
- */
-static int _get_free_ctx(void)
-{
-    for (int i = 0; i < CTX_NUMOF; i++) {
-        if (exti_ctx[i].cb == NULL) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/**
- * @brief Clear the context of the given pin
- */
-static void _ctx_clear(int port, int pin)
-{
-    int ctx = _ctx(port, pin);
-    if (ctx < CTX_NUMOF) {
-        exti_ctx[ctx].cb = NULL;
-        _write_map(port, pin, CTX_NUMOF);
-    }
-}
-
 int gpio_init(gpio_t pin, gpio_mode_t mode)
 {
     Pio *port = _port(pin);
@@ -161,7 +163,9 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
 
     /* disable interrupt and clear context (to be safe) */
     port->PIO_IDR = (1 << pin_num);
+#ifdef MODULE_PERIPH_GPIO_IRQ
     _ctx_clear(port_num, pin_num);
+#endif /* MODULE_PERIPH_GPIO_IRQ */
 
      /* give the PIO module the power over the corresponding pin */
     port->PIO_PER = (1 << pin_num);
@@ -191,6 +195,69 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
     return 0;
 }
 
+void gpio_init_mux(gpio_t pin, gpio_mux_t mux)
+{
+    /* power on the corresponding port */
+    PMC->PMC_PCER0 = (1 << (_port_num(pin) + 11));
+    /* give peripheral control over the pin */
+    _port(pin)->PIO_PDR = (1 << _pin_num(pin));
+    /* and configure the MUX */
+    _port(pin)->PIO_ABSR &= ~(1 << _pin_num(pin));
+    _port(pin)->PIO_ABSR |=  (mux << _pin_num(pin));
+}
+
+void gpio_set(gpio_t pin)
+{
+    _port(pin)->PIO_SODR = (1 << _pin_num(pin));
+}
+
+void gpio_clear(gpio_t pin)
+{
+    _port(pin)->PIO_CODR = (1 << _pin_num(pin));
+}
+
+void gpio_toggle(gpio_t pin)
+{
+    if (gpio_read(pin)) {
+        _port(pin)->PIO_CODR = (1 << _pin_num(pin));
+    } else {
+        _port(pin)->PIO_SODR = (1 << _pin_num(pin));
+    }
+}
+
+void gpio_write(gpio_t pin, int value)
+{
+    if (value) {
+        _port(pin)->PIO_SODR = (1 << _pin_num(pin));
+    } else {
+        _port(pin)->PIO_CODR = (1 << _pin_num(pin));
+    }
+}
+
+void gpio_irq_enable(gpio_t pin)
+{
+    NVIC_EnableIRQ((1 << (_port_num(pin) + PIOA_IRQn)));
+}
+
+void gpio_irq_disable(gpio_t pin)
+{
+    NVIC_DisableIRQ((1 << (_port_num(pin) + PIOA_IRQn)));
+}
+
+int gpio_read(gpio_t pin)
+{
+    Pio *port = _port(pin);
+    int pin_num = _pin_num(pin);
+
+     if (port->PIO_OSR & (1 << pin_num)) {
+        return (port->PIO_ODSR & (1 << pin_num)) ? 1 : 0;
+    }
+    else {
+        return (port->PIO_PDSR & (1 << pin_num)) ? 1 : 0;
+    }
+}
+
+#ifdef MODULE_PERIPH_GPIO_IRQ
 int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                   gpio_cb_t cb, void *arg)
 {
@@ -241,68 +308,6 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
     return 0;
 }
 
-void gpio_init_mux(gpio_t pin, gpio_mux_t mux)
-{
-    /* power on the corresponding port */
-    PMC->PMC_PCER0 = (1 << (_port_num(pin) + 11));
-    /* give peripheral control over the pin */
-    _port(pin)->PIO_PDR = (1 << _pin_num(pin));
-    /* and configure the MUX */
-    _port(pin)->PIO_ABSR &= ~(1 << _pin_num(pin));
-    _port(pin)->PIO_ABSR |=  (mux << _pin_num(pin));
-}
-
-void gpio_irq_enable(gpio_t pin)
-{
-    NVIC_EnableIRQ((1 << (_port_num(pin) + PIOA_IRQn)));
-}
-
-void gpio_irq_disable(gpio_t pin)
-{
-    NVIC_DisableIRQ((1 << (_port_num(pin) + PIOA_IRQn)));
-}
-
-int gpio_read(gpio_t pin)
-{
-    Pio *port = _port(pin);
-    int pin_num = _pin_num(pin);
-
-     if (port->PIO_OSR & (1 << pin_num)) {
-        return (port->PIO_ODSR & (1 << pin_num)) ? 1 : 0;
-    }
-    else {
-        return (port->PIO_PDSR & (1 << pin_num)) ? 1 : 0;
-    }
-}
-
-void gpio_set(gpio_t pin)
-{
-    _port(pin)->PIO_SODR = (1 << _pin_num(pin));
-}
-
-void gpio_clear(gpio_t pin)
-{
-    _port(pin)->PIO_CODR = (1 << _pin_num(pin));
-}
-
-void gpio_toggle(gpio_t pin)
-{
-    if (gpio_read(pin)) {
-        _port(pin)->PIO_CODR = (1 << _pin_num(pin));
-    } else {
-        _port(pin)->PIO_SODR = (1 << _pin_num(pin));
-    }
-}
-
-void gpio_write(gpio_t pin, int value)
-{
-    if (value) {
-        _port(pin)->PIO_SODR = (1 << _pin_num(pin));
-    } else {
-        _port(pin)->PIO_CODR = (1 << _pin_num(pin));
-    }
-}
-
 static inline void isr_handler(Pio *port, int port_num)
 {
     /* take interrupt flags only from pins which interrupt is enabled */
@@ -336,3 +341,4 @@ void isr_piod(void)
 {
     isr_handler(PIOD, PD);
 }
+#endif /* MODULE_PERIPH_GPIO_IRQ */

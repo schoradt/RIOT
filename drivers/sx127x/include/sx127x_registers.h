@@ -269,6 +269,11 @@ extern "C" {
 /* RegModemStat (Read Only) */
 #define SX127X_RF_LORA_MODEMSTAT_RX_CR_MASK                          (0x1F)
 #define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_MASK                   (0xE0)
+#define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_MODEM_CLEAR            (0x10) /* Default */
+#define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_HEADER_VALID           (0x08)
+#define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_RX_ONGOING             (0x04)
+#define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_SIGNAL_SYNCHRONIZED    (0x02)
+#define SX127X_RF_LORA_MODEMSTAT_MODEM_STATUS_SIGNAL_DETECTED        (0x01)
 
 /* RegHopChannel (Read Only) */
 #define SX127X_RF_LORA_HOPCHANNEL_PLL_LOCK_TIMEOUT_MASK              (0x7F)
@@ -597,6 +602,7 @@ extern "C" {
 #define SX127X_RF_OPMODE_TRANSMITTER                                 (0x03)
 #define SX127X_RF_OPMODE_SYNTHESIZER_RX                              (0x04)
 #define SX127X_RF_OPMODE_RECEIVER                                    (0x05)
+#define SX127X_RF_OPMODE_RECEIVER_SINGLE                             (0x06)
 
 /* RegBitRate (bits/sec) */
 #define SX127X_RF_BITRATEMSB_1200_BPS                                (0x68)

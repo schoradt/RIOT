@@ -24,6 +24,8 @@
 #ifndef AT86RF2XX_REGISTERS_H
 #define AT86RF2XX_REGISTERS_H
 
+#include "at86rf2xx.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -90,9 +92,14 @@ extern "C" {
 #define AT86RF2XX_REG__RX_SYN                                   (0x15)
 #ifdef MODULE_AT86RF212B
 #define AT86RF2XX_REG__RF_CTRL_0                                (0x16)
+#elif defined(MODULE_AT86RF233)
+#define AT86RF2XX_REG__TRX_RPC                                  (0x16)
 #endif
 #define AT86RF2XX_REG__XAH_CTRL_1                               (0x17)
 #define AT86RF2XX_REG__FTN_CTRL                                 (0x18)
+#if AT86RF2XX_HAVE_RETRIES
+#define AT86RF2XX_REG__XAH_CTRL_2                               (0x19)
+#endif
 #define AT86RF2XX_REG__PLL_CF                                   (0x1A)
 #define AT86RF2XX_REG__PLL_DCU                                  (0x1B)
 #define AT86RF2XX_REG__PART_NUM                                 (0x1C)
@@ -330,6 +337,23 @@ extern "C" {
 /** @} */
 
 /**
+ * @name    Bitfield definitions for the XAH_CTRL_2 register
+ *
+ * This register contains both the CSMA-CA retry counter and the frame retry
+ * counter. At this moment only the at86rf232 and the at86rf233 support this
+ * register.
+ *
+ * @{
+ */
+#if AT86RF2XX_HAVE_RETRIES
+#define AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_MASK           (0xF0)
+#define AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_OFFSET         (4)
+#define AT86RF2XX_XAH_CTRL_2__ARET_CSMA_RETRIES_MASK            (0x0E)
+#define AT86RF2XX_XAH_CTRL_2__ARET_CSMA_RETRIES_OFFSET          (1)
+#endif
+/** @} */
+
+/**
  * @name    Bitfield definitions for the CSMA_SEED_1 register
  * @{
  */
@@ -352,6 +376,19 @@ extern "C" {
 #define AT86RF2XX_RF_CTRL_0_GC_TX_OFFS__2DB                     (0x03)
 #endif
 /** @} */
+
+/**
+ * @name    Bitfield definitions for the TRX_RPC register
+ * @{
+ */
+#ifdef MODULE_AT86RF233
+#define AT86RF2XX_TRX_RPC_MASK__RX_RPC_CTRL_MAXPWR              (0xC0)
+#define AT86RF2XX_TRX_RPC_MASK__RX_RPC_EN                       (0x20)
+#define AT86RF2XX_TRX_RPC_MASK__PDT_RPC_EN                      (0x10)
+#define AT86RF2XX_TRX_RPC_MASK__PLL_RPC_EN                      (0x08)
+#define AT86RF2XX_TRX_RPC_MASK__XAH_TX_RPC_EN                   (0x04)
+#define AT86RF2XX_TRX_RPC_MASK__IPAN_RPC_EN                     (0x02)
+#endif
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,4 @@
-APPLICATION = driver_adcxx1c
 include ../Makefile.tests_common
-
-FEATURES_REQUIRED = periph_i2c
 
 USEMODULE += adc081c
 USEMODULE += xtimer

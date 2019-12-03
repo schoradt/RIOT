@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    boards_msba2 MSB-A2
- * @ingroup     boards
- * @brief       Support for the ScatterWeb MSB-A2 board
+ * @ingroup     boards_msba2
  * @{
  *
  * @file
@@ -52,13 +50,7 @@ extern "C" {
  * @{
  */
 #define XTIMER_OVERHEAD     7
-#define XTIMER_SHOOT_EARLY  3
 /** @} */
-
-/**
- * @brief   initialize the board's clock system
- */
-void init_clks1(void);
 
 #ifdef __cplusplus
 }

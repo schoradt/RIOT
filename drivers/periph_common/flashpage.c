@@ -7,7 +7,7 @@
  */
 
 /**
- * @ingroup     drivers
+ * @ingroup     drivers_periph_flashpage
  * @{
  *
  * @file
@@ -30,14 +30,14 @@
 
 void flashpage_read(int page, void *data)
 {
-    assert(page < FLASHPAGE_NUMOF);
+    assert(page < (int)FLASHPAGE_NUMOF);
 
     memcpy(data, flashpage_addr(page), FLASHPAGE_SIZE);
 }
 
-int flashpage_verify(int page, void *data)
+int flashpage_verify(int page, const void *data)
 {
-    assert(page < FLASHPAGE_NUMOF);
+    assert(page < (int)FLASHPAGE_NUMOF);
 
     if (memcmp(flashpage_addr(page), data, FLASHPAGE_SIZE) == 0) {
         return FLASHPAGE_OK;
@@ -47,10 +47,40 @@ int flashpage_verify(int page, void *data)
     }
 }
 
-int flashpage_write_and_verify(int page, void *data)
+int flashpage_write_and_verify(int page, const void *data)
 {
     flashpage_write(page, data);
     return flashpage_verify(page, data);
 }
+
+
+#if defined(FLASHPAGE_RWWEE_NUMOF)
+
+void flashpage_rwwee_read(int page, void *data)
+{
+    assert(page < (int)FLASHPAGE_RWWEE_NUMOF);
+
+    memcpy(data, flashpage_rwwee_addr(page), FLASHPAGE_SIZE);
+}
+
+int flashpage_rwwee_verify(int page, const void *data)
+{
+    assert(page < (int)FLASHPAGE_RWWEE_NUMOF);
+
+    if (memcmp(flashpage_rwwee_addr(page), data, FLASHPAGE_SIZE) == 0) {
+        return FLASHPAGE_OK;
+    }
+    else {
+        return FLASHPAGE_NOMATCH;
+    }
+}
+
+int flashpage_rwwee_write_and_verify(int page, const void *data)
+{
+    flashpage_rwwee_write(page, data);
+    return flashpage_rwwee_verify(page, data);
+}
+
+#endif
 
 #endif

@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    boards_arduino-mkr1000 Arduino MKR1000
- * @ingroup     boards
- * @brief       Support for the Arduino MKR1000 board.
+ * @ingroup     boards_arduino-mkr1000
  * @{
  *
  * @file
@@ -37,7 +35,7 @@ extern "C" {
 #define ARDUINO_LED         (6U)
 
 /**
- * @brief   LED pin definitions and handlers
+ * @name    LED pin definitions and handlers
  * @{
  */
 #define LED0_PIN            GPIO_PIN(PA, 20)
@@ -48,6 +46,8 @@ extern "C" {
 #define LED0_ON             (LED_PORT.OUTSET.reg = LED0_MASK)
 #define LED0_OFF            (LED_PORT.OUTCLR.reg = LED0_MASK)
 #define LED0_TOGGLE         (LED_PORT.OUTTGL.reg = LED0_MASK)
+
+#define LED0_NAME           "LED(Green)"
 /** @} */
 
 #ifdef __cplusplus

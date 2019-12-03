@@ -19,9 +19,7 @@
 
 #include <stdio.h>
 
-#include "nanocoap.h"
-#include "nanocoap_sock.h"
-
+#include "net/nanocoap_sock.h"
 #include "xtimer.h"
 
 #define COAP_INBUF_SIZE (256U)
@@ -30,7 +28,7 @@
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
 /* import "ifconfig" shell command, used for printing addresses */
-extern int _netif_config(int argc, char **argv);
+extern int _gnrc_netif_config(int argc, char **argv);
 
 int main(void)
 {
@@ -44,7 +42,7 @@ int main(void)
 
     /* print network addresses */
     puts("Configured network interfaces:");
-    _netif_config(0, NULL);
+    _gnrc_netif_config(0, NULL);
 
     /* initialize nanocoap server instance */
     uint8_t buf[COAP_INBUF_SIZE];

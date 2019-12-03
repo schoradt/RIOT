@@ -1,12 +1,11 @@
-export FLASHER = $(RIOTBASE)/dist/tools/jlink/jlink.sh
-export DEBUGGER = $(RIOTBASE)/dist/tools/jlink/jlink.sh
-export DEBUGSERVER = $(RIOTBASE)/dist/tools/jlink/jlink.sh
-export RESET = $(RIOTBASE)/dist/tools/jlink/jlink.sh
+FLASHER = $(RIOTTOOLS)/jlink/jlink.sh
+DEBUGGER = $(RIOTTOOLS)/jlink/jlink.sh
+DEBUGSERVER = $(RIOTTOOLS)/jlink/jlink.sh
+RESET ?= $(RIOTTOOLS)/jlink/jlink.sh
 
-export OFLAGS = -O binary
-export HEXFILE = $(ELFFILE:.elf=.bin)
+FLASHFILE ?= $(BINFILE)
 
-export FFLAGS ?= flash
-export DEBUGGER_FLAGS ?= debug
-export DEBUGSERVER_FLAGS ?= debug-server
-export RESET_FLAGS ?= reset
+FFLAGS ?= flash $(FLASHFILE)
+DEBUGGER_FLAGS ?= debug $(ELFFILE)
+DEBUGSERVER_FLAGS ?= debug-server
+RESET_FLAGS ?= reset

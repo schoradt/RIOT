@@ -1,4 +1,3 @@
-APPLICATION = driver_grove_ledbar
 include ../Makefile.tests_common
 
 USEMODULE += grove_ledbar
@@ -13,8 +12,5 @@ TEST_GROVE_LEDBAR_DIR ?=	GROVE_LEDBAR_G2R
 CFLAGS += -DGROVE_LEDBAR_CLK=$(TEST_GROVE_LEDBAR_CLK)
 CFLAGS += -DGROVE_LEDBAR_DAT=$(TEST_GROVE_LEDBAR_DAT)
 CFLAGS += -DGROVE_LEDBAR_DIR=$(TEST_GROVE_LEDBAR_DIR)
-
-test:
-	tests/01-run.py
 
 include $(RIOTBASE)/Makefile.include

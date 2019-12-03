@@ -26,6 +26,7 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
+#ifdef MODULE_PERIPH_GPIO_IRQ
 /**
  * @brief   Number of external interrupt lines
  */
@@ -34,6 +35,7 @@
  * @brief   Hold one interrupt context per interrupt line
  */
 static gpio_isr_ctx_t isr_ctx[NUMOF_IRQS];
+#endif /* MODULE_PERIPH_GPIO_IRQ */
 
 static inline int _port_num(gpio_t pin)
 {
@@ -60,21 +62,56 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
     GPIO_P_TypeDef *port = _port(pin);
     uint32_t pin_pos = _pin_pos(pin);
 
+    if (mode == GPIO_IN_PD) {
+        return -1;
+    }
+
     /* enable power for the GPIO module */
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
 
     /* configure the mode */
     port->MODE[pin_pos >> 3] &= ~(0xf << ((pin_pos & 0x7) * 4));
     port->MODE[pin_pos >> 3] |= (mode << ((pin_pos & 0x7) * 4));
-    /* reset output register */
-    port->DOUTCLR = (1 << pin_pos);
     /* if input with pull-up, set the data out register */
     if (mode == GPIO_IN_PU) {
         port->DOUTSET = (1 << pin_pos);
+    } else if (mode == GPIO_IN) {
+        port->DOUTCLR = (1 << pin_pos);
     }
 
     return 0;
 }
+
+int gpio_read(gpio_t pin)
+{
+    return _port(pin)->DIN & _pin_mask(pin);
+}
+
+void gpio_set(gpio_t pin)
+{
+    _port(pin)->DOUTSET = _pin_mask(pin);
+}
+
+void gpio_clear(gpio_t pin)
+{
+    _port(pin)->DOUTCLR = _pin_mask(pin);
+}
+
+void gpio_toggle(gpio_t pin)
+{
+    _port(pin)->DOUTTGL = _pin_mask(pin);
+}
+
+void gpio_write(gpio_t pin, int value)
+{
+    if (value) {
+        _port(pin)->DOUTSET = _pin_mask(pin);
+    } else {
+        _port(pin)->DOUTCLR = _pin_mask(pin);
+    }
+}
+
+#ifdef MODULE_PERIPH_GPIO_IRQ
 
 int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                     gpio_cb_t cb, void *arg)
@@ -113,41 +150,12 @@ void gpio_irq_disable(gpio_t pin)
     GPIO->IEN &= ~(_pin_mask(pin));
 }
 
-int gpio_read(gpio_t pin)
-{
-    return _port(pin)->DIN & _pin_mask(pin);
-}
-
-void gpio_set(gpio_t pin)
-{
-    _port(pin)->DOUTSET = _pin_mask(pin);
-}
-
-void gpio_clear(gpio_t pin)
-{
-    _port(pin)->DOUTCLR = _pin_mask(pin);
-}
-
-void gpio_toggle(gpio_t pin)
-{
-    _port(pin)->DOUTTGL = _pin_mask(pin);
-}
-
-void gpio_write(gpio_t pin, int value)
-{
-    if (value) {
-        _port(pin)->DOUTSET = _pin_mask(pin);
-    } else {
-        _port(pin)->DOUTCLR = _pin_mask(pin);
-    }
-}
-
 /**
  * @brief   External interrupt handler
  */
 void isr_gpio_even(void)
 {
-    for (int i = 0; i < NUMOF_IRQS; i++) {
+    for (unsigned i = 0; i < NUMOF_IRQS; i++) {
         if (GPIO->IF & (1 << i)) {
             isr_ctx[i].cb(isr_ctx[i].arg);
             GPIO->IFC = (1 << i);
@@ -155,3 +163,5 @@ void isr_gpio_even(void)
     }
     cortexm_isr_end();
 }
+
+#endif /* MODULE_PERIPH_GPIO_IRQ */

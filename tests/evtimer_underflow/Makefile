@@ -1,13 +1,8 @@
-APPLICATION = evtimer_msg
 include ../Makefile.tests_common
 
-BOARD_INSUFFICIENT_MEMORY := nucleo32-f031 nucleo32-f042
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo arduino-nano\
+                             arduino-uno nucleo-f031k6 nucleo-f042k6
 
 USEMODULE += evtimer
 
 include $(RIOTBASE)/Makefile.include
-
-test:
-# `testrunner` calls `make term` recursively, results in duplicated `TERMFLAGS`.
-# So clears `TERMFLAGS` before run.
-	TERMFLAGS= tests/01-run.py

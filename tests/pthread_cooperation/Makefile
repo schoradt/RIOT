@@ -1,12 +1,32 @@
-APPLICATION = pthread_cooperation
 include ../Makefile.tests_common
 
-BOARD_BLACKLIST := arduino-mega2560 waspmote-pro arduino-uno arduino-duemilanove
-# arduino mega2560 uno duemilanove: unknown type name: clockid_t
+BOARD_INSUFFICIENT_MEMORY := \
+	arduino-duemilanove \
+	arduino-nano \
+	arduino-uno \
+	nucleo-f031k6 \
+	hifive1 \
+	hifive1b \
+	i-nucleo-lrwan1 \
+	stm32l0538-disco \
+	#
 
-BOARD_INSUFFICIENT_MEMORY := nucleo32-f031
+# The test reboots on 'arduino-mega2560' because it mallocs too much memory.
+# So I disabled all the other avr boards. Re-enable after success test.
+BOARD_INSUFFICIENT_MEMORY += \
+	arduino-leonardo \
+	arduino-mega2560 \
+	mega-xplained \
+	waspmote-pro \
+	#
 
-USEMODULE += posix
+# nucleo-f303k8 doesn't have enough RAM to run the test so we reduce the stack
+# size for every thread
+ifneq (,$(filter nucleo-f303k8,$(BOARD)))
+  CFLAGS += -DTHREAD_STACKSIZE_DEFAULT=512
+endif
+
+USEMODULE += posix_headers
 USEMODULE += pthread
 
 include $(RIOTBASE)/Makefile.include

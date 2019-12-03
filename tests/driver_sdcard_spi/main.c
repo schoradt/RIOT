@@ -22,6 +22,7 @@
 #include "sdcard_spi_internal.h"
 #include "sdcard_spi_params.h"
 #include "fmt.h"
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -35,13 +36,16 @@
 
 /* this is provided by the sdcard_spi driver
  * see sys/auto_init/storage/auto_init_sdcard_spi.c */
-extern sdcard_spi_t sdcard_spi_devs[sizeof(sdcard_spi_params) / sizeof(sdcard_spi_params[0])];
+extern sdcard_spi_t sdcard_spi_devs[ARRAY_SIZE(sdcard_spi_params)];
 sdcard_spi_t *card = &sdcard_spi_devs[0];
 
-char buffer[SD_HC_BLOCK_SIZE * MAX_BLOCKS_IN_BUFFER];
+uint8_t buffer[SD_HC_BLOCK_SIZE * MAX_BLOCKS_IN_BUFFER];
 
 static int _init(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     printf("Initializing SD-card at SPI_%i...", sdcard_spi_params[0].spi_dev);
 
     if (sdcard_spi_init(card, &sdcard_spi_params[0]) != 0) {
@@ -57,21 +61,27 @@ static int _init(int argc, char **argv)
 
 static int _cid(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     puts("----------------------------------------");
     printf("MID: %d\n", card->cid.MID);
     printf("OID: %c%c\n", card->cid.OID[0], card->cid.OID[1]);
     printf("PNM: %c%c%c%c%c\n", card->cid.PNM[0], card->cid.PNM[1], card->cid.PNM[2],
                                 card->cid.PNM[3], card->cid.PNM[4]);
-    printf("PRV: %d\n", card->cid.PRV);
-    printf("PSN: %lu\n", card->cid.PSN);
-    printf("MDT: %d\n", card->cid.MDT);
-    printf("CRC: %d\n", card->cid.CID_CRC);
+    printf("PRV: %u\n", card->cid.PRV);
+    printf("PSN: %" PRIu32 "\n", card->cid.PSN);
+    printf("MDT: %u\n", card->cid.MDT);
+    printf("CRC: %u\n", card->cid.CID_CRC);
     puts("----------------------------------------");
     return 0;
 }
 
 static int _csd(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     if (card->csd_structure == SD_CSD_V1) {
         puts("CSD V1\n----------------------------------------");
         printf("CSD_STRUCTURE: 0x%0lx\n", (unsigned long)card->csd.v1.CSD_STRUCTURE);
@@ -137,6 +147,9 @@ static int _csd(int argc, char **argv)
 
 static int _sds(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     sd_status_t sds;
 
     if (sdcard_spi_read_sds(card, &sds) == SD_RW_OK) {
@@ -164,6 +177,9 @@ static int _sds(int argc, char **argv)
 
 static int _size(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     uint64_t bytes = sdcard_spi_get_capacity(card);
 
     uint32_t gib_int = bytes / (SDCARD_SPI_IEC_KIBI * SDCARD_SPI_IEC_KIBI * SDCARD_SPI_IEC_KIBI);
@@ -173,12 +189,12 @@ static int _size(int argc, char **argv)
 
     uint32_t gb_int = bytes / (SDCARD_SPI_SI_KILO * SDCARD_SPI_SI_KILO * SDCARD_SPI_SI_KILO);
     uint32_t gb_frac = (bytes / (SDCARD_SPI_SI_KILO * SDCARD_SPI_SI_KILO))
-                       - (gb_int * SDCARD_SPI_SI_KILO); //[MB]
+                       - (gb_int * SDCARD_SPI_SI_KILO); /* [MB] */
 
     puts("\nCard size: ");
-    //fflush(stdout);
     print_u64_dec( bytes );
-    printf(" bytes (%lu,%03lu GiB | %lu,%03lu GB)\n", gib_int, gib_frac, gb_int, gb_frac);
+    printf(" bytes (%" PRIu32 ",%03" PRIu32 " GiB | %" PRIu32 ",%03" PRIu32 " GB)\n", gib_int,
+           gib_frac, gb_int, gb_frac);
     return 0;
 }
 
@@ -277,18 +293,18 @@ static int _write(int argc, char **argv)
     }
 
     /* copy data to a full-block-sized buffer an fill remaining block space according to -r param*/
-    char buffer[SD_HC_BLOCK_SIZE];
-    for (int i = 0; i < sizeof(buffer); i++) {
-        if (repeat_data || i < size) {
-            buffer[i] = data[i % size];
+    uint8_t write_buffer[SD_HC_BLOCK_SIZE];
+    for (unsigned i = 0; i < sizeof(write_buffer); i++) {
+        if (repeat_data || ((int)i < size)) {
+            write_buffer[i] = data[i % size];
         }
         else {
-            buffer[i] = 0;
+            write_buffer[i] = 0;
         }
     }
 
     sd_rw_response_t state;
-    int chunks_written = sdcard_spi_write_blocks(card, bladdr, buffer, SD_HC_BLOCK_SIZE, 1, &state);
+    int chunks_written = sdcard_spi_write_blocks(card, bladdr, write_buffer, SD_HC_BLOCK_SIZE, 1, &state);
 
     if (state != SD_RW_OK) {
         printf("write error %d (wrote %d/%d blocks)\n", state, chunks_written, 1);
@@ -303,7 +319,7 @@ static int _copy(int argc, char **argv)
 {
     int src_block;
     int dst_block;
-    char tmp_copy[SD_HC_BLOCK_SIZE];
+    uint8_t tmp_copy[SD_HC_BLOCK_SIZE];
 
     if (argc != 3) {
         printf("usage: %s src_block dst_block\n", argv[0]);
@@ -335,7 +351,11 @@ static int _copy(int argc, char **argv)
 
 static int _sector_count(int argc, char **argv)
 {
-    printf("available sectors on card: %li\n", sdcard_spi_get_sector_count(card));
+    (void)argc;
+    (void)argv;
+
+    printf("available sectors on card: %" PRIu32 "\n",
+           sdcard_spi_get_sector_count(card));
     return 0;
 }
 

@@ -1,8 +1,8 @@
+CPU = kinetis
+CPU_MODEL = mk64fn1m0vll12
+
 # Put defined MCU peripherals here (in alphabetical order)
 FEATURES_PROVIDED += periph_adc
-FEATURES_PROVIDED += periph_cpuid
-FEATURES_PROVIDED += periph_gpio
-FEATURES_PROVIDED += periph_hwrng
 FEATURES_PROVIDED += periph_i2c
 FEATURES_PROVIDED += periph_pwm
 FEATURES_PROVIDED += periph_rtc
@@ -11,10 +11,5 @@ FEATURES_PROVIDED += periph_spi
 FEATURES_PROVIDED += periph_timer
 FEATURES_PROVIDED += periph_uart
 
-# Various other features (if any)
-FEATURES_PROVIDED += cpp
-
-# The board MPU family (used for grouping by the CI system)
-FEATURES_MCU_GROUP = cortex_m4_1
-
--include $(RIOTCPU)/k64f/Makefile.features
+# Put other features for this board (in alphabetical order)
+FEATURES_PROVIDED += riotboot

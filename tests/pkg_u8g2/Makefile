@@ -1,7 +1,8 @@
-APPLICATION = pkg_u8g2
 include ../Makefile.tests_common
 
-BOARD_INSUFFICIENT_MEMORY := nucleo32-f031
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo arduino-nano \
+                             arduino-uno chronos msb-430 msb-430h \
+                             nucleo-f031k6 telosb wsn430-v1_3b wsn430-v1_4 z1
 
 USEMODULE += xtimer
 
@@ -13,7 +14,7 @@ TEST_OUTPUT ?= 1
 TEST_I2C ?= 0
 TEST_SPI ?= 0
 
-TEST_ADDR ?= 0x78
+TEST_ADDR ?= 0x3c
 
 TEST_PIN_CS ?= GPIO_PIN\(0,0\)
 TEST_PIN_DC ?= GPIO_PIN\(0,0\)

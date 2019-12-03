@@ -19,6 +19,8 @@
 #ifndef W5100_PARAMS_H
 #define W5100_PARAMS_H
 
+#include "board.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,18 +41,20 @@ extern "C" {
 #ifndef W5100_PARAM_EVT
 #define W5100_PARAM_EVT         (GPIO_PIN(0, 1))   /**< Default event pin */
 #endif
+
+#ifndef W5100_PARAMS
+#define W5100_PARAMS            { .spi = W5100_PARAM_SPI,     \
+                                  .clk = W5100_PARAM_SPI_CLK, \
+                                  .cs  = W5100_PARAM_CS,      \
+                                  .evt = W5100_PARAM_EVT }
+#endif
 /** @} */
 
 /**
  * @brief   W5100 configuration
  */
 static const  w5100_params_t w5100_params[] = {
-    {
-        .spi = W5100_PARAM_SPI,
-        .clk = W5100_PARAM_SPI_CLK,
-        .cs  = W5100_PARAM_CS,
-        .evt = W5100_PARAM_EVT
-    },
+    W5100_PARAMS
 };
 /** @} */
 

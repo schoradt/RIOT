@@ -28,6 +28,16 @@ extern "C" {
 #endif
 
 /**
+ * @name    Starting address of the CPU ID
+ */
+#if defined(CPU_MODEL_STM32L151RB_A) || defined(CPU_MODEL_STM32L151CB) || \
+    defined(CPU_MODEL_STM32L151CB_A)
+#define CPUID_ADDR          (0x1ff80050)
+#else
+#define CPUID_ADDR          (0x1ff800d0)
+#endif
+
+/**
  * @brief   Available ports on the STM32L1 family
  */
 enum {
@@ -55,27 +65,28 @@ typedef struct {
  */
 #define HAVE_ADC_RES_T
 typedef enum {
-    ADC_RES_6BIT  = (0x3 << 3),  /**< ADC resolution: 6 bit */
-    ADC_RES_8BIT  = (0x2 << 3),  /**< ADC resolution: 8 bit */
-    ADC_RES_10BIT = (0x1 << 3),  /**< ADC resolution: 10 bit */
-    ADC_RES_12BIT = (0x0 << 3),  /**< ADC resolution: 12 bit */
-    ADC_RES_14BIT = (0xfe),      /**< not applicable */
-    ADC_RES_16BIT = (0xff)       /**< not applicable */
+    ADC_RES_6BIT  = (ADC_CR1_RES_0 | ADC_CR1_RES_1),    /**< ADC resolution: 6 bit */
+    ADC_RES_8BIT  = (ADC_CR1_RES_1),                    /**< ADC resolution: 8 bit */
+    ADC_RES_10BIT = (ADC_CR1_RES_0),                    /**< ADC resolution: 10 bit */
+    ADC_RES_12BIT = (0x00),                             /**< ADC resolution: 12 bit */
+    ADC_RES_14BIT = (0xfe),                             /**< not applicable */
+    ADC_RES_16BIT = (0xff)                              /**< not applicable */
 } adc_res_t;
 /** @} */
 
 /**
- * @brief   I2C configuration data structure
+ * @name    EEPROM configuration
+ * @{
  */
-typedef struct {
-    I2C_TypeDef *dev;       /**< i2c device */
-    gpio_t scl;             /**< scl pin number */
-    gpio_t sda;             /**< sda pin number */
-    gpio_mode_t pin_mode;   /**< with or without pull resistor */
-    gpio_af_t af;           /**< I2C alternate function value */
-    uint8_t er_irqn;        /**< error IRQ */
-    uint8_t ev_irqn;        /**< event IRQ */
-} i2c_conf_t;
+#define EEPROM_START_ADDR          (0x08080000)
+#if defined(CPU_MODEL_STM32L152RE)
+#define EEPROM_SIZE                (16384UL)  /* 16kB */
+#elif defined(CPU_MODEL_STM32L151RC)
+#define EEPROM_SIZE                (8192U)    /* 8kB */
+#elif defined(CPU_MODEL_STM32L151CB) || defined(CPU_MODEL_STM32L151CB_A)
+#define EEPROM_SIZE                (4096U)    /* 4kB */
+#endif
+/** @} */
 
 #ifdef __cplusplus
 }

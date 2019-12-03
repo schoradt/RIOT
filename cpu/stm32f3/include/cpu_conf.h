@@ -24,17 +24,8 @@
 
 #include "cpu_conf_common.h"
 
-#if defined(CPU_MODEL_STM32F303VC)
-#include "vendor/stm32f303xc.h"
-#elif defined(CPU_MODEL_STM32F334R8)
-#include "vendor/stm32f334x8.h"
-#elif defined(CPU_MODEL_STM32F303RE) || defined(CPU_MODEL_STM32F303ZE)
-#include "vendor/stm32f303xe.h"
-#elif defined(CPU_MODEL_STM32F303K8)
-#include "vendor/stm32f303x8.h"
-#elif defined(CPU_MODEL_STM32F302R8)
-#include "vendor/stm32f302x8.h"
-#endif
+#include "vendor/stm32f3xx.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,7 +35,7 @@ extern "C" {
  * @{
  */
 #define CPU_DEFAULT_IRQ_PRIO            (1U)
-#if defined(CPU_MODEL_STM32F303RE) || defined (CPU_MODEL_STM32F303ZE)
+#if defined(CPU_LINE_STM32F303xE)
 #define CPU_IRQ_NUMOF                   (85U)
 #else
 #define CPU_IRQ_NUMOF                   (82U)
@@ -52,6 +43,20 @@ extern "C" {
 #define CPU_FLASH_BASE                  FLASH_BASE
 /** @} */
 
+/**
+ * @name    Flash page configuration
+ * @{
+ */
+#define FLASHPAGE_SIZE      (2048U)
+#define FLASHPAGE_NUMOF     (STM32_FLASHSIZE / FLASHPAGE_SIZE)
+
+/* The minimum block size which can be written is 2B. However, the erase
+ * block is always FLASHPAGE_SIZE.
+ */
+#define FLASHPAGE_RAW_BLOCKSIZE    (2U)
+/* Writing should be always 4 bytes aligned */
+#define FLASHPAGE_RAW_ALIGNMENT    (4U)
+/** @} */
 
 #ifdef __cplusplus
 }

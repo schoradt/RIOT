@@ -1,7 +1,9 @@
-APPLICATION = pipe
 include ../Makefile.tests_common
 
-BOARD_INSUFFICIENT_MEMORY := nucleo32-f031
+#malloc.h not found
+BOARD_BLACKLIST := arduino-leonardo mega-xplained
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-nano arduino-uno \
+                             nucleo-f031k6
 
 USEMODULE += pipe
 

@@ -66,7 +66,7 @@
 #define ADT7310_REG_ID_MASK_SILICON_VERSION  (0x07)
 
 /** @brief Expected manufacturer ID */
-#define ADT7310_EXPECTED_MANUF_ID (0b11000000)
+#define ADT7310_EXPECTED_MANUF_ID (0xC0)
 
 /** @brief 13 bit temperature mask */
 #define ADT7310_REG_VALUE_MASK_13BIT  (0xF8)
@@ -218,8 +218,8 @@ float adt7310_read_float(const adt7310_t *dev)
 {
     int16_t raw = adt7310_read_raw(dev);
     if (raw == INT16_MIN) {
-        /* ignore cppcheck: we want to create a NaN here */
-        /* cppcheck-suppress duplicateExpression */
+        /* cppcheck-suppress duplicateExpression
+         * (reason: we want to create a NaN here) */
         return (0.0f / 0.0f); /* return NaN */
     }
     if (!dev->high_res) {

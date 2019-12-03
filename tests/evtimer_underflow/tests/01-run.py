@@ -7,14 +7,11 @@
 # directory for more details.
 
 from __future__ import print_function
-import os
 import sys
-import time
-
-sys.path.append(os.path.join(os.environ['RIOTBASE'], 'dist/tools/testrunner'))
-import testrunner
+from testrunner import run
 
 how_many = 100
+
 
 def testfunc(child):
     for i in range(how_many):
@@ -25,5 +22,6 @@ def testfunc(child):
     print("Stopped after %i iterations, but should run forever." % how_many)
     print("=> All tests successful")
 
+
 if __name__ == "__main__":
-    sys.exit(testrunner.run(testfunc, echo=False))
+    sys.exit(run(testfunc))

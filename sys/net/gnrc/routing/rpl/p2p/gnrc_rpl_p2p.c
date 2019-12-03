@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Cenk Gündoğan <mail@cgundogan.de>
+ * Copyright (C) 2016 Cenk Gündoğan <cenk.guendogan@haw-hamburg.de>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -11,8 +11,10 @@
  *
  * @file
  *
- * @author  Cenk Gündoğan <mail@cgundogan.de>
+ * @author  Cenk Gündoğan <cenk.guendogan@haw-hamburg.de>
  */
+
+#include <string.h>
 
 #include "net/icmpv6.h"
 #include "net/gnrc/ipv6.h"
@@ -346,11 +348,9 @@ void gnrc_rpl_p2p_recv_DRO(gnrc_pktsnip_t *pkt, ipv6_addr_t *src)
     }
 
     if (gnrc_ipv6_netif_find_by_addr(&me, &addr) == dodag->iface) {
-        fib_add_entry(&gnrc_ipv6_fib_table, dodag->iface, p2p_ext->target.u8,
-                      sizeof(ipv6_addr_t), 0x0, src->u8,
-                      sizeof(ipv6_addr_t), FIB_FLAG_RPL_ROUTE,
-                      p2p_ext->dodag->default_lifetime *
-                      p2p_ext->dodag->lifetime_unit * MS_PER_SEC);
+        gnrc_ipv6_nib_ft_add(&p2p_ext->target, IPV6_ADDR_BIT_LEN, src, dodag->iface,
+                             p2p_ext->dodag->default_lifetime *
+                             p2p_ext->dodag->lifetime_unit);
 
         if (p2p_ext->dodag->node_status != GNRC_RPL_ROOT_NODE) {
             if ((rdo_snip = gnrc_pktbuf_start_write(rdo_snip)) == NULL) {

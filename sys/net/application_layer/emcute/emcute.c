@@ -24,9 +24,11 @@
 #include "mutex.h"
 #include "sched.h"
 #include "xtimer.h"
+#include "byteorder.h"
 #include "thread_flags.h"
 
 #include "net/emcute.h"
+#include "net/mqttsn.h"
 #include "emcute_internal.h"
 
 #define ENABLE_DEBUG        (0)
@@ -59,35 +61,17 @@ static volatile uint8_t waiton = 0xff;
 static volatile uint16_t waitonid = 0;
 static volatile int result;
 
-static inline uint16_t get_u16(const uint8_t *buf)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (uint16_t)((buf[0] << 8) | buf[1]);
-#else
-    return (uint16_t)((buf[1] << 8) | buf[0]);
-#endif
-}
-
-static inline void set_u16(uint8_t *buf, uint16_t val)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    buf[0] = (uint8_t)(val >> 8);
-    buf[1] = (uint8_t)(val & 0xff);
-#else
-    buf[0] = (uint8_t)(val & 0xff);
-    buf[1] = (uint8_t)(val >> 8);
-#endif
-}
-
 static size_t set_len(uint8_t *buf, size_t len)
 {
-    if (len < (0xff - 7)) {
+    /* - `len` field minimum length == 1
+     * - `((len + 1) <= 0xff) == len < 0xff` */
+    if (len < 0xff) {
         buf[0] = len + 1;
         return 1;
     }
     else {
         buf[0] = 0x01;
-        set_u16(&tbuf[1], (uint16_t)(len + 3));
+        byteorder_htobebufs(&tbuf[1], (uint16_t)(len + 3));
         return 3;
     }
 }
@@ -99,7 +83,7 @@ static size_t get_len(uint8_t *buf, uint16_t *len)
         return 1;
     }
     else {
-        *len = get_u16(&buf[1]);
+        *len = byteorder_bebuftohs(&buf[1]);
         return 3;
     }
 }
@@ -118,7 +102,7 @@ static int syncsend(uint8_t resp, size_t len, bool unlock)
      * remove was called */
     thread_flags_clear(TFLAGS_ANY);
 
-    for (unsigned retries = 0; retries < EMCUTE_N_RETRY; retries++) {
+    for (unsigned retries = 0; retries <= EMCUTE_N_RETRY; retries++) {
         DEBUG("[emcute] syncsend: sending round %i\n", retries);
         sock_udp_send(&sock, tbuf, len, &gateway);
 
@@ -128,7 +112,7 @@ static int syncsend(uint8_t resp, size_t len, bool unlock)
             DEBUG("[emcute] syncsend: got response [%i]\n", result);
             xtimer_remove(&timer);
             res = result;
-            retries = EMCUTE_N_RETRY;
+            break;
         }
     }
 
@@ -151,12 +135,13 @@ static void on_disconnect(void)
 
 static void on_ack(uint8_t type, int id_pos, int ret_pos, int res_pos)
 {
-    if ((waiton == type) && (!id_pos || (waitonid == get_u16(&rbuf[id_pos])))) {
+    if ((waiton == type) &&
+        (!id_pos || (waitonid == byteorder_bebuftohs(&rbuf[id_pos])))) {
         if (!ret_pos || (rbuf[ret_pos] == ACCEPT)) {
             if (res_pos == 0) {
                 result = EMCUTE_OK;
             } else {
-                result = (int)get_u16(&rbuf[res_pos]);
+                result = (int)byteorder_bebuftohs(&rbuf[res_pos]);
             }
         } else {
             result = EMCUTE_REJECT;
@@ -173,7 +158,7 @@ static void on_publish(size_t len, size_t pos)
     }
 
     emcute_sub_t *sub;
-    uint16_t tid = get_u16(&rbuf[pos + 2]);
+    uint16_t tid = byteorder_bebuftohs(&rbuf[pos + 2]);
 
     /* allocate a response packet */
     uint8_t buf[7] = { 7, PUBACK, 0, 0, 0, 0, ACCEPT };
@@ -255,7 +240,7 @@ int emcute_con(sock_udp_ep_t *remote, bool clean, const char *will_topic,
     tbuf[1] = CONNECT;
     tbuf[2] = flags;
     tbuf[3] = PROTOCOL_VERSION;
-    set_u16(&tbuf[4], EMCUTE_KEEPALIVE);
+    byteorder_htobebufs(&tbuf[4], EMCUTE_KEEPALIVE);
     memcpy(&tbuf[6], cli_id, strlen(cli_id));
 
     /* configure 'state machine' and send the connection request */
@@ -329,8 +314,8 @@ int emcute_reg(emcute_topic_t *topic)
 
     tbuf[0] = (strlen(topic->name) + 6);
     tbuf[1] = REGISTER;
-    set_u16(&tbuf[2], 0);
-    set_u16(&tbuf[4], id_next);
+    byteorder_htobebufs(&tbuf[2], 0);
+    byteorder_htobebufs(&tbuf[4], id_next);
     waitonid = id_next++;
     memcpy(&tbuf[6], topic->name, strlen(topic->name));
 
@@ -362,21 +347,20 @@ int emcute_pub(emcute_topic_t *topic, const void *data, size_t len,
     mutex_lock(&txlock);
 
     size_t pos = set_len(tbuf, (len + 6));
-    len += (pos + 6);
     tbuf[pos++] = PUBLISH;
     tbuf[pos++] = flags;
-    set_u16(&tbuf[pos], topic->id);
+    byteorder_htobebufs(&tbuf[pos], topic->id);
     pos += 2;
-    set_u16(&tbuf[pos], id_next);
+    byteorder_htobebufs(&tbuf[pos], id_next);
     waitonid = id_next++;
     pos += 2;
     memcpy(&tbuf[pos], data, len);
 
     if (flags & EMCUTE_QOS_1) {
-        res = syncsend(PUBACK, len, true);
+        res = syncsend(PUBACK, len + pos, true);
     }
     else {
-        sock_udp_send(&sock, tbuf, len, &gateway);
+        sock_udp_send(&sock, tbuf, len + pos, &gateway);
         mutex_unlock(&txlock);
     }
 
@@ -399,7 +383,7 @@ int emcute_sub(emcute_sub_t *sub, unsigned flags)
     tbuf[0] = (strlen(sub->topic.name) + 5);
     tbuf[1] = SUBSCRIBE;
     tbuf[2] = flags;
-    set_u16(&tbuf[3], id_next);
+    byteorder_htobebufs(&tbuf[3], id_next);
     waitonid = id_next++;
     memcpy(&tbuf[5], sub->topic.name, strlen(sub->topic.name));
 
@@ -435,7 +419,7 @@ int emcute_unsub(emcute_sub_t *sub)
     tbuf[0] = (strlen(sub->topic.name) + 5);
     tbuf[1] = UNSUBSCRIBE;
     tbuf[2] = 0;
-    set_u16(&tbuf[3], id_next);
+    byteorder_htobebufs(&tbuf[3], id_next);
     waitonid = id_next++;
     memcpy(&tbuf[5], sub->topic.name, strlen(sub->topic.name));
 
@@ -508,7 +492,8 @@ int emcute_willupd_msg(const void *data, size_t len)
 
 void emcute_run(uint16_t port, const char *id)
 {
-    assert(strlen(id) < EMCUTE_ID_MAXLEN);
+    assert(strlen(id) >= MQTTSN_CLI_ID_MINLEN &&
+           strlen(id) <= MQTTSN_CLI_ID_MAXLEN);
 
     sock_udp_ep_t local = SOCK_IPV6_EP_ANY;
     sock_udp_ep_t remote;
@@ -531,7 +516,7 @@ void emcute_run(uint16_t port, const char *id)
 
         if ((len < 0) && (len != -ETIMEDOUT)) {
             LOG_ERROR("[emcute] error while receiving UDP packet\n");
-            return;
+            continue;
         }
 
         if (len >= 2) {

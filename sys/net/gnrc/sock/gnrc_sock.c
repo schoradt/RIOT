@@ -17,8 +17,8 @@
 
 #include "net/af.h"
 #include "net/ipv6/hdr.h"
+#include "net/gnrc/ipv6.h"
 #include "net/gnrc/ipv6/hdr.h"
-#include "net/gnrc/ipv6/netif.h"
 #include "net/gnrc/netreg.h"
 #include "net/udp.h"
 #include "utlist.h"
@@ -54,9 +54,12 @@ void gnrc_sock_create(gnrc_sock_reg_t *reg, gnrc_nettype_t type, uint32_t demux_
 ssize_t gnrc_sock_recv(gnrc_sock_reg_t *reg, gnrc_pktsnip_t **pkt_out,
                        uint32_t timeout, sock_ip_ep_t *remote)
 {
-    gnrc_pktsnip_t *pkt, *ip, *netif;
+    gnrc_pktsnip_t *pkt, *netif;
     msg_t msg;
 
+    if (reg->mbox.cib.mask != (SOCK_MBOX_SIZE - 1)) {
+        return -EINVAL;
+    }
 #ifdef MODULE_XTIMER
     xtimer_t timeout_timer;
 
@@ -89,14 +92,12 @@ ssize_t gnrc_sock_recv(gnrc_sock_reg_t *reg, gnrc_pktsnip_t **pkt_out,
 #endif
             /* Falls Through. */
         default:
-            return -EINTR;
+            return -EINVAL;
     }
     /* TODO: discern NETTYPE from remote->family (set in caller), when IPv4
      * was implemented */
-    ipv6_hdr_t *ipv6_hdr;
-    ip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_IPV6);
-    assert((ip != NULL) && (ip->size >= 40));
-    ipv6_hdr = ip->data;
+    ipv6_hdr_t *ipv6_hdr = gnrc_ipv6_get_header(pkt);
+    assert(ipv6_hdr != NULL);
     memcpy(&remote->addr, &ipv6_hdr->src, sizeof(ipv6_addr_t));
     remote->family = AF_INET6;
     netif = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
@@ -183,9 +184,9 @@ ssize_t gnrc_sock_send(gnrc_pktsnip_t *payload, sock_ip_ep_t *local,
     err_report.type = 0;
 
     while (err_report.type != GNRC_NETERR_MSG_TYPE) {
-        msg_try_receive(err_report);
+        msg_try_receive(&err_report);
         if (err_report.type != GNRC_NETERR_MSG_TYPE) {
-            msg_try_send(err_report, sched_active_pid);
+            msg_try_send(&err_report, sched_active_pid);
         }
     }
     if (err_report.content.value != GNRC_NETERR_SUCCESS) {

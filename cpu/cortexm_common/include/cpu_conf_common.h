@@ -57,6 +57,22 @@ extern "C" {
 #endif
 /** @} */
 
+/**
+ * @brief   Select fastest bitarithm_lsb implementation
+ * @{
+ */
+#ifdef __ARM_FEATURE_CLZ
+#define BITARITHM_LSB_BUILTIN
+#else
+#define BITARITHM_LSB_LOOKUP
+#endif
+/** @} */
+
+/**
+ * @brief   Attribute for memory sections required by SRAM PUF
+ */
+#define PUF_SRAM_ATTRIBUTES __attribute__((used, section(".puf")))
+
 #ifdef __cplusplus
 }
 #endif

@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "net/af.h"
 #include "net/tcp.h"
+#include "net/gnrc.h"
 #include "internal/common.h"
 #include "internal/pkt.h"
 #include "internal/fsm.h"
@@ -46,19 +47,36 @@ static msg_t _eventloop_msg_queue[TCP_EVENTLOOP_MSG_QUEUE_SIZE];
  */
 static int _send(gnrc_pktsnip_t *pkt)
 {
+    assert(pkt != NULL);
+
     /* NOTE: In sending direction: pkt = nw, nw->next = tcp, tcp->next = payload */
-    gnrc_pktsnip_t *tcp;
+    gnrc_pktsnip_t *tcp = NULL;
+    gnrc_pktsnip_t *nw = NULL;
 
     /* Search for TCP header */
     LL_SEARCH_SCALAR(pkt, tcp, type, GNRC_NETTYPE_TCP);
+    /* cppcheck-suppress knownConditionTrueFalse
+     * (reason: tcp *can* be != NULL after LL_SEARCH_SCALAR) */
     if (tcp == NULL) {
         DEBUG("gnrc_tcp_eventloop : _send() : tcp header missing.\n");
         gnrc_pktbuf_release(pkt);
         return -EBADMSG;
     }
 
+    /* Search for network layer */
+#ifdef MODULE_GNRC_IPV6
+    /* Get IPv6 header, discard packet if doesn't contain an ipv6 header */
+    LL_SEARCH_SCALAR(pkt, nw, type, GNRC_NETTYPE_IPV6);
+    if (nw == NULL) {
+        DEBUG("gnrc_tcp_eventloop.c : _send() : pkt contains no ipv6 layer header\n");
+        gnrc_pktbuf_release(pkt);
+        return -EBADMSG;
+    }
+#endif
+
     /* Dispatch packet to network layer */
-    if (!gnrc_netapi_dispatch_send(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+    assert(nw != NULL);
+    if (!gnrc_netapi_dispatch_send(nw->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
         DEBUG("gnrc_tcp_eventloop : _send() : network layer not found\n");
         gnrc_pktbuf_release(pkt);
     }
@@ -118,6 +136,12 @@ static int _receive(gnrc_pktsnip_t *pkt)
         return 0;
     }
 
+    if (tcp->size < sizeof(tcp_hdr_t)) {
+        DEBUG("gnrc_tcp_eventloop.c : _receive() : packet is too short\n");
+        gnrc_pktbuf_release(pkt);
+        return -ERANGE;
+    }
+
     /* Extract control bits, src and dst ports and check if SYN is set (not SYN+ACK) */
     hdr = (tcp_hdr_t *)tcp->data;
     ctl = byteorder_ntohs(hdr->off_ctl);
@@ -144,6 +168,7 @@ static int _receive(gnrc_pktsnip_t *pkt)
             return -ENOMSG;
         }
         pkt->type = GNRC_NETTYPE_UNDEF;
+        hdr = (tcp_hdr_t *)tcp->data;
     }
 
     /* Validate checksum */
@@ -199,8 +224,12 @@ static int _receive(gnrc_pktsnip_t *pkt)
         DEBUG("gnrc_tcp_eventloop.c : _receive() : Can't find fitting tcb\n");
         if ((ctl & MSK_RST) != MSK_RST) {
             _pkt_build_reset_from_pkt(&reset, pkt);
-            gnrc_netapi_send(gnrc_tcp_pid, reset);
+            if (gnrc_netapi_send(gnrc_tcp_pid, reset) < 1) {
+                DEBUG("gnrc_tcp_eventloop.c : _receive() : unable to send reset paket\n");
+                gnrc_pktbuf_release(reset);
+            }
         }
+        gnrc_pktbuf_release(pkt);
         return -ENOTCONN;
     }
     gnrc_pktbuf_release(pkt);

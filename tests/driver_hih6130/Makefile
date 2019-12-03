@@ -1,7 +1,4 @@
-APPLICATION = driver_hih6130
 include ../Makefile.tests_common
-
-FEATURES_REQUIRED = periph_i2c
 
 USEMODULE += hih6130
 USEMODULE += xtimer

@@ -29,6 +29,11 @@ extern "C" {
 #endif
 
 /**
+ * @brief   Starting address of the CPU ID
+ */
+#define CPUID_ADDR          (0x1ff80050)
+
+/**
  * @brief   Available ports on the STM32L0 family
  */
 enum {
@@ -66,16 +71,18 @@ typedef struct {
 } adc_conf_t;
 
 /**
- * @brief   I2C configuration data structure
+ * @name    EEPROM configuration
+ * @{
  */
-typedef struct {
-    I2C_TypeDef *dev;       /**< i2c device */
-    gpio_t scl;             /**< scl pin number */
-    gpio_t sda;             /**< sda pin number */
-    gpio_mode_t pin_mode;   /**< with or without pull resistor */
-    gpio_af_t af;           /**< I2C alternate function value */
-    uint8_t ev_irqn;        /**< event IRQ */
-} i2c_conf_t;
+#define EEPROM_START_ADDR          (0x08080000)
+#if defined(CPU_LINE_STM32L073xx) || defined(CPU_LINE_STM32L072xx)
+#define EEPROM_SIZE                (6144U)  /* 6kB */
+#elif defined(CPU_LINE_STM32L053xx) || defined(CPU_LINE_STM32L052xx)
+#define EEPROM_SIZE                (2048U)  /* 2kB */
+#elif defined(CPU_LINE_STM32L031xx)
+#define EEPROM_SIZE                (1024U)  /* 1kB */
+#endif
+/** @} */
 
 #ifdef __cplusplus
 }

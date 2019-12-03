@@ -10,7 +10,7 @@
 #define CPU_H
 
 /**
- * @defgroup    lpc2387     NXP LPC2387
+ * @defgroup    cpu_lpc2387     NXP LPC2387
  * @ingroup     cpu
  * @brief       NXP LPC2387 specific code
  * @{
@@ -26,13 +26,17 @@
 extern "C" {
 #endif
 
-extern uintptr_t __stack_start;     ///< end of user stack memory space
+extern uintptr_t __stack_start;     /**< end of user stack memory space */
 
 /**
  * @brief Scale lpc2387 cpu speed
  */
 void lpc2387_pclk_scale(uint32_t source, uint32_t target, uint32_t *pclksel, uint32_t *prescale);
 
+/**
+ * @brief Initialize lpc2387 cpu clocks
+ */
+void cpu_init_clks(void);
 
 /**
  * @brief install lpc2387 irq

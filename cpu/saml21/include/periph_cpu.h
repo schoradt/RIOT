@@ -27,49 +27,52 @@ extern "C" {
 #endif
 
 /**
+ * @brief   The Low Power SRAM is not retained during deep sleep.
+ */
+#define CPU_BACKUP_RAM_NOT_RETAINED (1)
+
+/**
  * @brief   Mapping of pins to EXTI lines, -1 means not EXTI possible
  */
+#if defined(CPU_MODEL_SAML21E18A) || defined(CPU_MODEL_SAML21E18B) || \
+    defined(CPU_MODEL_SAML21E17A) || defined(CPU_MODEL_SAML21E17B) || \
+    defined(CPU_MODEL_SAML21E16A) || defined(CPU_MODEL_SAML21E16B) || \
+    defined(CPU_MODEL_SAML21E15A) || defined(CPU_MODEL_SAML21E15B)
+static const int8_t exti_config[1][32] = {
+    { 0,  1,  2,  3,  4,  5,  6,  7, -1,  9, 10, 11, -1, -1, 14, 15,
+      0,  1,  2,  3, -1, -1,  6,  7, 12, 13, -1, 15, -1, -1, 10, 11},
+};
+#else /* CPU_MODEL_SAML21E */
 static const int8_t exti_config[2][32] = {
+#if defined(CPU_MODEL_SAML21G18A) || defined(CPU_MODEL_SAML21G18B) || \
+    defined(CPU_MODEL_SAML21G17A) || defined(CPU_MODEL_SAML21G17B) || \
+    defined(CPU_MODEL_SAML21G16A) || defined(CPU_MODEL_SAML21G16B)
+    { 0,  1,  2,  3,  4,  5,  6,  7, -1,  9, 10, 11, 12, 13, 14, 15,
+      0,  1,  2,  3,  4,  5,  6,  7, 12, 13, -1, 15, -1, -1, 10, 11},
+    {-1, -1,  2,  3, -1, -1, -1, -1,  8,  9, 10, 11, -1, -1, -1, -1,
+     -1, -1, -1, -1, -1, -1,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1},
+#elif defined(CPU_MODEL_SAML21J18A) || defined(CPU_MODEL_SAML21J18B) || \
+      defined(CPU_MODEL_SAML21J17A) || defined(CPU_MODEL_SAML21J17B) || \
+      defined(CPU_MODEL_SAML21J16A) || defined(CPU_MODEL_SAML21J16B)
     { 0,  1,  2,  3,  4,  5,  6,  7, -1,  9, 10, 11, 12, 13, 14, 15,
       0,  1,  2,  3,  4,  5,  6,  7, 12, 13, -1, 15, -1, -1, 10, 11},
     { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
       0,  1, -1, -1, -1, -1,  6,  7, -1, -1, -1, -1, -1, -1, 14, 15},
+#elif defined(CPU_MODEL_SAMR30G18A) || defined(CPU_MODEL_SAMR34J18B)
+    { 0,  1, -1, -1,  4,  5,  6,  7, -1,  9, 10, 11, 12, 13, 14, 15,
+      0,  1,  2,  3,  4, -1,  6,  7, 12, 13, -1, 15,  8, -1, 10, 11},
+    { 0, -1,  2,  3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15,
+      0,  1, -1, -1, -1, -1,  6,  7, -1, -1, -1, -1, -1, -1, 14, 15},
+#elif defined(CPU_MODEL_SAMR30E18A)
+    {-1, -1, -1, -1, -1, -1,  6,  7, -1,  9, 10, 11, -1, -1, 14, 15,
+      0,  1,  2,  3,  4, -1, -1, -1, 12, 13, -1, 15,  8, -1, 10, 11},
+    { 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15,
+      0,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 14, 15},
+#else
+    #error Please define a proper CPU_MODEL.
+#endif
 };
-
-/**
- * @brief   Available ports on the SAML21 for convenient access
- */
-enum {
-    PA = 0,                 /**< port A */
-    PB = 1,                 /**< port B */
-};
-
-/**
- * @brief   Generate GPIO mode bitfields
- *
- * We use 3 bit to determine the pin functions:
- * - bit 0: PU or PU
- * - bit 1: input enable
- * - bit 2: pull enable
- */
-#define GPIO_MODE(pr, ie, pe)   (pr | (ie << 1) | (pe << 2))
-
-#ifndef DOXYGEN
-/**
- * @brief   Override GPIO modes
- * @{
- */
-#define HAVE_GPIO_MODE_T
-typedef enum {
-    GPIO_IN    = GPIO_MODE(0, 1, 0),    /**< IN */
-    GPIO_IN_PD = GPIO_MODE(0, 1, 1),    /**< IN with pull-down */
-    GPIO_IN_PU = GPIO_MODE(1, 1, 1),    /**< IN with pull-up */
-    GPIO_OUT   = GPIO_MODE(0, 0, 0),    /**< OUT (push-pull) */
-    GPIO_OD    = 0xfe,                  /**< not supported by HW */
-    GPIO_OD_PU = 0xff                   /**< not supported by HW */
-} gpio_mode_t;
-/** @} */
-#endif /* ndef DOXYGEN */
+#endif /* CPU_MODEL_SAML21E */
 
 #define HAVE_ADC_RES_T
 typedef enum {

@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    boards_nz32-sc151 NZ32-SC151
- * @ingroup     boards
- * @brief       Board specific files for the nz32-sc151 board.
+ * @ingroup     boards_nz32-sc151
  * @{
  *
  * @file

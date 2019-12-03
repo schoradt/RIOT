@@ -7,7 +7,7 @@
  */
 
 /**
- * @ingroup     lpc2387
+ * @ingroup     cpu_lpc2387
  * @{
  */
 
@@ -15,6 +15,9 @@
 #include "cpu.h"
 #include "irq.h"
 #include "VIC.h"
+
+#include "stdio_base.h"
+#include "periph/init.h"
 
 void lpc2387_pclk_scale(uint32_t source, uint32_t target, uint32_t *pclksel, uint32_t *prescale)
 {
@@ -51,9 +54,9 @@ void cpu_clock_scale(uint32_t source, uint32_t target, uint32_t *prescale)
 
     lpc2387_pclk_scale(source, target, &pclksel, prescale);
 
-    PCLKSEL0 = (PCLKSEL0 & ~(BIT2 | BIT3)) | (pclksel << 2);        // timer 0
-    PCLKSEL0 = (PCLKSEL0 & ~(BIT4 | BIT5)) | (pclksel << 4);        // timer 1
-    PCLKSEL1 = (PCLKSEL1 & ~(BIT12 | BIT13)) | (pclksel << 12); // timer 2
+    PCLKSEL0 = (PCLKSEL0 & ~(BIT2 | BIT3)) | (pclksel << 2);    /* timer 0 */
+    PCLKSEL0 = (PCLKSEL0 & ~(BIT4 | BIT5)) | (pclksel << 4);    /* timer 1 */
+    PCLKSEL1 = (PCLKSEL1 & ~(BIT12 | BIT13)) | (pclksel << 12); /* timer 2 */
 }
 
 /******************************************************************************
@@ -85,14 +88,52 @@ bool install_irq(int IntNumber, void (*HandlerAddr)(void), int Priority)
     }
 }
 
-__attribute__((naked,noreturn)) void arm_reset(void)
+void arm_reset(void)
 {
+    /*
+     * We abuse the watchdog timer for a reset.
+     */
     irq_disable();
-    WDTC = 0x0FFFF;
-    WDMOD = 0x03;
-    WDFEED= 0xAA;
-    WDFEED= 0x55;
+    /* Set the watchdog timeout constant to 0xFFFF */
+    WDTC   = 0xFFFF;
+    /*
+     * Enable watchdog interrupt and enable reset on watchdog timeout.
+     * (The reset on watchdog timeout flag is ignored, if interrupt on watchdog
+     * timeout is not set. Thus, we set both. The reset takes precedence over
+     * the interrupt, anyway.)
+     */
+    WDMOD  = 0x03;
+    /*
+     * Feed the watchdog by writing 0xAA followed by 0x55:
+     * Reload the watchdog timer with the value in WDTC (0xFFFF)
+     */
+    WDFEED = 0xAA;
+    WDFEED = 0x55;
+    /* Wait for the watchdog timer to expire, thus performing a reset */
     while(1) {}
+}
+
+/**
+ * @brief Initialize the CPU, set IRQ priorities, clocks
+ */
+void cpu_init(void)
+{
+    extern void board_init(void);
+
+    /* configure CPU clock */
+    cpu_init_clks();
+
+    /* set up GPIOs */
+    gpio_init_ports();
+
+    /* board specific setup of i/o pins */
+    board_init();
+
+    /* initialize stdio prior to periph_init() to allow use of DEBUG() there */
+    stdio_init();
+
+    /* trigger static peripheral initialization */
+    periph_init();
 }
 
 /** @} */

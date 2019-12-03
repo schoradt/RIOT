@@ -2,7 +2,7 @@
  * ARM architecture common support functions
  *
  * Copyright (C) 2008, 2009  Heiko Will <hwill@inf.fu-berlin.de>
- * Copyright (C) 2009  Kaspar Schleiser <kaspar@schleiser.de>
+ * Copyright (C) 2009 Kaspar Schleiser <kaspar@schleiser.de>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -18,6 +18,8 @@
 
 #include <stdio.h>
 #include "arm_cpu.h"
+#include "irq.h"
+#include "sched.h"
 #include "thread.h"
 
 #define STACK_MARKER    (0x77777777)
@@ -25,7 +27,12 @@
 
 void thread_yield_higher(void)
 {
-    __asm__("svc 0\n");
+    if (irq_is_in()) {
+        sched_context_switch_request = 1;
+    }
+    else {
+        __asm__("svc 0\n");
+    }
 }
 
 /*----------------------------------------------------------------------------

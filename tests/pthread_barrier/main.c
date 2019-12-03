@@ -44,7 +44,7 @@ static void *run(void *id_)
         pthread_barrier_wait(&barrier);
 
         uint32_t timeout_us = random_uint32() % 2500000;
-        printf("Child %i sleeps for %8" PRIu32 " µs.\n", id, timeout_us);
+        printf("Child %i sleeps for %8" PRIu32 " us.\n", id, timeout_us);
         xtimer_usleep(timeout_us);
     }
 
@@ -56,7 +56,7 @@ int main(void)
 {
     random_init(RAND_SEED);
 
-    puts("Start.\n");
+    puts("START\n");
     pthread_barrier_init(&barrier, NULL, NUM_CHILDREN);
 
     pthread_t children[NUM_CHILDREN];
@@ -70,6 +70,7 @@ int main(void)
     }
 
     pthread_barrier_destroy(&barrier);
-    puts("\nDone.");
+    puts("");
+    puts("SUCCESS");
     return 0;
 }

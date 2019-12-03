@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Freie Universität Berlin
+ * Copyright (C) 2015-2018 Freie Universität Berlin
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -26,6 +26,13 @@ extern "C" {
 #endif
 
 /**
+ * @name    Power management configuration
+ * @{
+ */
+#define PROVIDES_PM_OFF
+/** @} */
+
+/**
  * @brief   Starting offset of CPU_ID
  */
 #define CPUID_ADDR          (&NRF_FICR->DEVICEID[0])
@@ -46,14 +53,20 @@ extern "C" {
 #endif
 
 /**
+ * @brief   Override GPIO_UNDEF value
+ */
+#define GPIO_UNDEF          (UINT_MAX)
+
+/**
  * @brief   Generate GPIO mode bitfields
  *
  * We use 4 bit to encode the pin mode:
- * - bit   0: output enable
- * - bit   1: input connect
- * - bit 2+3: pull resistor configuration
+ * - bit      0: output enable
+ * - bit      1: input connect
+ * - bit    2+3: pull resistor configuration
+ * - bit 8+9+10: drive configuration
  */
-#define GPIO_MODE(oe, ic, pr)   (oe | (ic << 1) | (pr << 2))
+#define GPIO_MODE(oe, ic, pr, dr)   (oe | (ic << 1) | (pr << 2) | (dr << 8))
 
 /**
  * @brief   No support for HW chip select...
@@ -82,12 +95,13 @@ extern "C" {
  */
 #define HAVE_GPIO_MODE_T
 typedef enum {
-    GPIO_IN    = GPIO_MODE(0, 0, 0),    /**< IN */
-    GPIO_IN_PD = GPIO_MODE(0, 0, 1),    /**< IN with pull-down */
-    GPIO_IN_PU = GPIO_MODE(0, 0, 3),    /**< IN with pull-up */
-    GPIO_OUT   = GPIO_MODE(1, 1, 0),    /**< OUT (push-pull) */
-    GPIO_OD    = (0xff),                /**< not supported by HW */
-    GPIO_OD_PU = (0xfe)                 /**< not supported by HW */
+    GPIO_IN       = GPIO_MODE(0, 0, 0, 0), /**< IN */
+    GPIO_IN_PD    = GPIO_MODE(0, 0, 1, 0), /**< IN with pull-down */
+    GPIO_IN_PU    = GPIO_MODE(0, 0, 3, 0), /**< IN with pull-up */
+    GPIO_IN_OD_PU = GPIO_MODE(0, 0, 3, 6), /**< IN with pull-up and open drain output */
+    GPIO_OUT      = GPIO_MODE(1, 1, 0, 0), /**< OUT (push-pull) */
+    GPIO_OD       = (0xff),                /**< not supported by HW */
+    GPIO_OD_PU    = (0xfe)                 /**< not supported by HW */
 } gpio_mode_t;
 /** @} */
 
@@ -101,21 +115,6 @@ typedef enum {
     GPIO_RISING  = 1,       /**< emit interrupt on rising flank */
     GPIO_BOTH    = 3        /**< emit interrupt on both flanks */
 } gpio_flank_t;
-/** @} */
-
-/**
- * @brief   Override ADC resolution values
- * @{
- */
-#define HAVE_ADC_RES_T
-typedef enum {
-    ADC_RES_6BIT  = 0xf0,   /**< ADC resolution: 6 bit */
-    ADC_RES_8BIT  = 0x00,   /**< ADC resolution: 8 bit */
-    ADC_RES_10BIT = 0x02,   /**< ADC resolution: 10 bit */
-    ADC_RES_12BIT = 0xf1,   /**< ADC resolution: 12 bit */
-    ADC_RES_14BIT = 0xf2,   /**< ADC resolution: 14 bit */
-    ADC_RES_16BIT = 0xf3    /**< ADC resolution: 16 bit */
-} adc_res_t;
 /** @} */
 #endif /* ndef DOXYGEN */
 
@@ -165,6 +164,15 @@ typedef struct {
     uint8_t mosi;       /**< MOSI pin */
     uint8_t miso;       /**< MISO pin */
 } spi_conf_t;
+
+/**
+ * @name    WDT upper and lower bound times in ms
+ * @{
+ */
+#define NWDT_TIME_LOWER_LIMIT          (1)
+/* Set upper limit to the maximum possible value that could go in CRV register */
+#define NWDT_TIME_UPPER_LIMIT          ((UINT32_MAX >> 15) * US_PER_MS + 1)
+/** @} */
 
 #ifdef __cplusplus
 }

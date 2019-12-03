@@ -133,7 +133,7 @@ static const uint8_t _ascii[][5] = {
     {0x10, 0x08, 0x08, 0x10, 0x08},/* 7e ~ */
 };
 
-static const char _riot[] = {
+static const uint8_t _riot[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -209,12 +209,12 @@ static inline void done(const pcd8544_t *dev)
     spi_release(dev->spi);
 }
 
-static void _write(const pcd8544_t *dev, uint8_t is_data, char data)
+static void _write(const pcd8544_t *dev, uint8_t is_data, uint8_t data)
 {
     /* set command or data mode */
     gpio_write(dev->mode, is_data);
     /* write byte to LCD */
-    spi_transfer_bytes(dev->spi, dev->cs, false, (uint8_t *)&data, NULL, 1);
+    spi_transfer_bytes(dev->spi, dev->cs, false, &data, NULL, 1);
 }
 
 static inline void _set_x(const pcd8544_t *dev, uint8_t x)
@@ -307,14 +307,14 @@ void pcd8544_riot(const pcd8544_t *dev)
     pcd8544_write_img(dev, _riot);
 }
 
-void pcd8544_write_img(const pcd8544_t *dev, const char img[])
+void pcd8544_write_img(const pcd8544_t *dev, const uint8_t img[])
 {
     /* set initial position */
     lock(dev);
     _set_x(dev, 0);
     _set_y(dev, 0);
     /* write image data to display */
-    for (int i = 0; i < (PCD8544_RES_X * PCD8544_RES_Y / 8); i++) {
+    for (unsigned i = 0; i < (PCD8544_RES_X * PCD8544_RES_Y / 8); i++) {
         _write(dev, MODE_DTA, img[i]);
     }
     done(dev);
@@ -331,7 +331,7 @@ void pcd8544_write_c(const pcd8544_t *dev, uint8_t x, uint8_t y, char c)
     _set_x(dev, x * CHAR_WIDTH);
     _set_y(dev, y);
     /* write char */
-    for (int i = 0; i < CHAR_WIDTH - 1; i++) {
+    for (unsigned i = 0; i < CHAR_WIDTH - 1; i++) {
         _write(dev, MODE_DTA, _ascii[c - ASCII_MIN][i]);
     }
     _write(dev, MODE_DTA, 0x00);
@@ -350,7 +350,7 @@ void pcd8544_clear(const pcd8544_t *dev)
     lock(dev);
     _set_x(dev, 0);
     _set_y(dev, 0);
-    for (int i = 0; i < PCD8544_RES_X * PCD8544_ROWS; i++) {
+    for (unsigned i = 0; i < PCD8544_RES_X * PCD8544_ROWS; i++) {
         _write(dev, MODE_DTA, 0x00);
     }
     done(dev);

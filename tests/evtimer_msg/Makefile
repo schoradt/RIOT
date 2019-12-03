@@ -1,13 +1,11 @@
-APPLICATION = evtimer_msg
 include ../Makefile.tests_common
 
-BOARD_INSUFFICIENT_MEMORY := nucleo32-f031 nucleo32-f042
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo arduino-nano\
+                             arduino-uno nucleo-f031k6 nucleo-f042k6
 
 USEMODULE += evtimer
 
-include $(RIOTBASE)/Makefile.include
+# This test randomly fails on `native` so disable it from CI
+TEST_ON_CI_BLACKLIST += native
 
-test:
-# `testrunner` calls `make term` recursively, results in duplicated `TERMFLAGS`.
-# So clears `TERMFLAGS` before run.
-	TERMFLAGS= tests/01-run.py
+include $(RIOTBASE)/Makefile.include

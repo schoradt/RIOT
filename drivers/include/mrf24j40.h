@@ -116,6 +116,16 @@ extern "C" {
 #define MRF24J40_MAX_FRAME_RETRIES      (3U)        /**< Number of frame retries (fixed) */
 
 /**
+ * @brief Enable external PA/LNA control
+ *
+ * Increase RSSI for MRF24J40MC/MD/ME devices. No effect on MRF24J40MA.
+ * For more information, please refer to section 4.2 of MRF24J40 datasheet.
+ */
+#ifndef MRF24J40_USE_EXT_PA_LNA
+#define MRF24J40_USE_EXT_PA_LNA         (0U)
+#endif
+
+/**
  * @brief   struct holding all params needed for device initialization
  */
 typedef struct mrf24j40_params {
@@ -137,6 +147,7 @@ typedef struct {
     uint8_t idle_state;                     /**< state to return to after sending */
     uint8_t tx_frame_len;                   /**< length of the current TX frame */
     uint8_t header_len;                     /**< length of the header */
+    uint8_t fcf_low;                        /**< Low 8 FCF bits of the current TX frame. */
     uint8_t pending;                        /**< Flags for pending tasks */
     uint8_t irq_flag;                       /**< Flags for IRQs */
     uint8_t tx_retries;                     /**< Number of retries needed for last transmission */
@@ -158,14 +169,15 @@ void mrf24j40_setup(mrf24j40_t *dev, const mrf24j40_params_t *params);
 void mrf24j40_reset(mrf24j40_t *dev);
 
 /**
- * @brief   Trigger a clear channel assessment
+ * @brief   Trigger a clear channel assessment & retrieve RSSI
  *
  * @param[in] dev           device to use
+ * @param[in] rssi          RSSI value from register in dBm
  *
  * @return                  true if channel is clear
  * @return                  false if channel is busy
  */
-bool mrf24j40_cca(mrf24j40_t *dev);
+bool mrf24j40_cca(mrf24j40_t *dev, int8_t *rssi);
 
 /**
  * @brief   Get the short address of the given device
@@ -366,6 +378,14 @@ void mrf24j40_reset_state_machine(mrf24j40_t *dev);
  * @param[in] dev           device to operate on
  */
 void mrf24j40_software_reset(mrf24j40_t *dev);
+
+/**
+ * @brief   Convert scalar from mrf24j40 RSSI to dBm
+ *
+ * @param[in] value         value to convert to dBm
+ * @return                  converted value in dBm
+ */
+int8_t mrf24j40_dbm_from_reg(uint8_t value);
 
 /**
  * @brief   Prepare for sending of data

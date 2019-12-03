@@ -1,4 +1,3 @@
-APPLICATION = driver_my9221
 include ../Makefile.tests_common
 
 USEMODULE += my9221
@@ -15,8 +14,5 @@ CFLAGS += -DTEST_MY9221_CLK=$(TEST_MY9221_CLK)
 CFLAGS += -DTEST_MY9221_DAT=$(TEST_MY9221_DAT)
 CFLAGS += -DTEST_MY9221_DIR=$(TEST_MY9221_DIR)
 CFLAGS += -DTEST_MY9221_NUM=$(TEST_MY9221_NUM)
-
-test:
-	tests/01-run.py
 
 include $(RIOTBASE)/Makefile.include

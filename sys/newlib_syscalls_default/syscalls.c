@@ -8,7 +8,9 @@
  */
 
 /**
- * @ingroup     sys_newlib
+ * @defgroup    sys_newlib Newlib system call
+ * @ingroup     sys
+ * @brief       Newlib system call
  * @{
  *
  * @file
@@ -25,6 +27,7 @@
 #include <unistd.h>
 #include <reent.h>
 #include <errno.h>
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +46,9 @@
 #include "vfs.h"
 #endif
 
-#include "uart_stdio.h"
+#include "stdio_base.h"
+
+#include <sys/times.h>
 
 #ifdef MODULE_XTIMER
 #include <sys/time.h>
@@ -65,7 +70,7 @@ char *heap_top = &_sheap + 4;
  */
 void _init(void)
 {
-    uart_stdio_init();
+    /* nothing to do here */
 }
 
 /**
@@ -117,6 +122,24 @@ void *_sbrk_r(struct _reent *r, ptrdiff_t incr)
     irq_restore(state);
     return res;
 }
+
+/**
+ * @brief Print heap statistics
+ *
+ * If the CPU does not provide its own heap handling and heap_stats function,
+ * but instead uses the newlib_syscall_default function, this function outputs
+ * the heap statistics. If the CPU provides its own heap_stats function, it
+ * should define HAVE_HEAP_STATS in its cpu_conf.h file.
+ */
+#ifndef HAVE_HEAP_STATS
+__attribute__((weak)) void heap_stats(void)
+{
+    struct mallinfo minfo = mallinfo();
+    long int heap_size = &_eheap - &_sheap;
+    printf("heap: %ld (used %d, free %ld) [bytes]\n",
+           heap_size, minfo.uordblks, heap_size - minfo.uordblks);
+}
+#endif /* HAVE_HEAP_STATS */
 
 #endif /*__mips__*/
 
@@ -385,7 +408,7 @@ int _unlink_r(struct _reent *r, const char *path)
 /*
  * Fallback read function
  *
- * All input is read from uart_stdio regardless of fd number. The function will
+ * All input is read from stdio_uart regardless of fd number. The function will
  * block until a byte is actually read.
  *
  * Note: the read function does not buffer - data will be lost if the function is not
@@ -395,20 +418,20 @@ _ssize_t _read_r(struct _reent *r, int fd, void *buffer, size_t count)
 {
     (void)r;
     (void)fd;
-    return uart_stdio_read(buffer, count);
+    return stdio_read(buffer, count);
 }
 
 /*
  * Fallback write function
  *
- * All output is directed to uart_stdio, independent of the given file descriptor.
+ * All output is directed to stdio_uart, independent of the given file descriptor.
  * The write call will further block until the byte is actually written to the UART.
  */
 _ssize_t _write_r(struct _reent *r, int fd, const void *data, size_t count)
 {
     (void) r;
     (void) fd;
-    return uart_stdio_write(data, count);
+    return stdio_write(data, count);
 }
 
 /* Stubs to avoid linking errors, these functions do not have any effect */
@@ -462,6 +485,23 @@ int _unlink_r(struct _reent *r, const char *path)
 #endif /* MODULE_VFS */
 
 /**
+ * Create a hard link (not implemented).
+ *
+ * @todo    Not implemented.
+ *
+ * @return  -1. Sets errno to ENOSYS.
+ */
+int _link_r(struct _reent *ptr, const char *old_name, const char *new_name)
+{
+    (void)old_name;
+    (void)new_name;
+
+    ptr->_errno = ENOSYS;
+
+    return -1;
+}
+
+/**
  * @brief Query whether output stream is a terminal
  *
  * @param r     TODO
@@ -500,11 +540,34 @@ int _kill(pid_t pid, int sig)
 #ifdef MODULE_XTIMER
 int _gettimeofday_r(struct _reent *r, struct timeval *restrict tp, void *restrict tzp)
 {
-    (void)tzp;
     (void) r;
+    (void) tzp;
     uint64_t now = xtimer_now_usec64();
     tp->tv_sec = div_u64_by_1000000(now);
     tp->tv_usec = now - (tp->tv_sec * US_PER_SEC);
     return 0;
 }
+#else
+int _gettimeofday_r(struct _reent *r, struct timeval *restrict tp, void *restrict tzp)
+{
+    (void) tp;
+    (void) tzp;
+    r->_errno = ENOSYS;
+    return -1;
+}
 #endif
+
+/**
+ * Current process times (not implemented).
+ *
+ * @param[out]  ptms    Not modified.
+ *
+ * @return  -1, this function always fails. errno is set to ENOSYS.
+ */
+clock_t _times_r(struct _reent *ptr, struct tms *ptms)
+{
+    (void)ptms;
+    ptr->_errno = ENOSYS;
+
+    return (-1);
+}

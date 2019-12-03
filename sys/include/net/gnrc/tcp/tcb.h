@@ -7,9 +7,7 @@
  */
 
 /**
- * @defgroup    net_gnrc_tcp TCP
- * @ingroup     net_gnrc
- * @brief       RIOT's TCP implementation for the GNRC network stack.
+ * @ingroup     net_gnrc_tcp
  *
  * @{
  *
@@ -53,6 +51,7 @@ typedef struct _transmission_control_block {
 #ifdef MODULE_GNRC_IPV6
     uint8_t local_addr[sizeof(ipv6_addr_t)];  /**< Local IP address */
     uint8_t peer_addr[sizeof(ipv6_addr_t)];   /**< Peer IP address */
+    int8_t  ll_iface;                         /**< Link layer interface id to use. */
 #endif
     uint16_t local_port;   /**< Local connections port number */
     uint16_t peer_port;    /**< Peer connections port number */

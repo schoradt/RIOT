@@ -19,6 +19,7 @@
  * @}
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -98,7 +99,7 @@ int main(void)
                "Humidity [%%rH]: %u.%02u\n"
 #endif
                "\n+-------------------------------------+\n",
-               temperature / 100, (temperature % 100) / 10,
+               temperature / 100, abs(temperature % 100) / 10,
 #if defined(MODULE_BME280)
                (unsigned long)pressure,
                (unsigned int)(humidity / 100), (unsigned int)(humidity % 100)

@@ -11,6 +11,17 @@
  * @ingroup     drivers_periph
  * @brief       Low-level RTT (Real Time Timer) peripheral driver
  *
+ * # (Low-) Power Implications
+ *
+ * After the RTT has been initialized (i.e. after calling rtt_init()), the RTT
+ * should be powered on and running. The RTT can then be powered off manually
+ * at a later point in time by calling the rtt_poweroff() function. When the RTT
+ * is powered back on using the rtt_poweron() function, it **should**
+ * transparently continue its previously configured operation.
+ *
+ * On many CPUs, certain power states might need to be blocked in rtt_init(), so
+ * that it is ensured that the RTT will function properly while it is enabled.
+ *
  * @{
  * @file
  * @brief       Low-level RTT (Real Time Timer) peripheral driver interface
@@ -23,14 +34,13 @@
 #ifndef PERIPH_RTT_H
 #define PERIPH_RTT_H
 
+#include <stdint.h>
+
 #include "periph_conf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* guard file in case no RTT device was specified */
-#if RTT_NUMOF
 
 #ifndef RTT_FREQUENCY
 #warning "RTT_FREQUENCY undefined. Set RTT_FREQUENCY to the number of ticks" \
@@ -165,8 +175,6 @@ void rtt_poweron(void);
  * @brief Turn the RTT hardware module off
  */
 void rtt_poweroff(void);
-
-#endif /* RTT_NUMOF */
 
 #ifdef __cplusplus
 }

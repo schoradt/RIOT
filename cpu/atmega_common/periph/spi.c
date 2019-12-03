@@ -2,6 +2,7 @@
  * Copyright (C) 2015 Daniel Amkaer Sorensen
  *               2016 Freie Universität Berlin
  *               2017 Hamburg University of Applied Sciences
+ *               2017 Thomas Perrot <thomas.perrot@tupi.fr>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -19,6 +20,7 @@
  * @author      Daniel Amkaer Sorensen <daniel.amkaer@gmail.com>
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  * @author      Dimitri Nahm <dimitri.nahm@haw-hamburg.de>
+ * @author      Thomas Perrot <thomas.perrot@tupi.fr>
  *
  * @}
  */
@@ -49,17 +51,36 @@ void spi_init(spi_t bus)
 
 void spi_init_pins(spi_t bus)
 {
+    (void)bus;
     /* set SPI pins as output */
 #if defined (CPU_ATMEGA2560) || defined (CPU_ATMEGA1281)
     DDRB |= ((1 << DDB2) | (1 << DDB1) | (1 << DDB0));
 #endif
-#ifdef CPU_ATMEGA328P
+#if defined (CPU_ATMEGA328P)
     DDRB |= ((1 << DDB2) | (1 << DDB3) | (1 << DDB5));
+#endif
+#if defined (CPU_ATMEGA1284P)
+    DDRB |= ((1 << DDB4) | (1 << DDB5) | (1 << DDB7));
+#endif
+#if defined (CPU_ATMEGA256RFR2)
+    /* Master: PB3 MISO set to out
+     *         PB2 MOSI set to input by hardware
+     *         PB1 SCK  set to out
+     *         PB0 /CS  kept as is, has to be configured by user. Flexibility to
+     *                  use different /CS pin.
+     * Only Master supported. Slave: Only MOSI has to be set as Input.
+     * ATmega256RFR2 data sheet p. 365
+     * */
+    DDRB |= ((1 << DDB2) | (1 << DDB1));
+#endif
+#ifdef CPU_ATMEGA32U4
+    DDRB |= ((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
 #endif
 }
 
 int spi_acquire(spi_t bus, spi_cs_t cs, spi_mode_t mode, spi_clk_t clk)
 {
+    (void)bus;
     (void)cs;
 
     /* lock the bus and power on the SPI peripheral */
@@ -79,6 +100,7 @@ int spi_acquire(spi_t bus, spi_cs_t cs, spi_mode_t mode, spi_clk_t clk)
 
 void spi_release(spi_t bus)
 {
+    (void)bus;
     /* power off and release the bus */
     SPCR &= ~(1 << SPE);
     power_spi_disable();
@@ -88,6 +110,8 @@ void spi_release(spi_t bus)
 void spi_transfer_bytes(spi_t bus, spi_cs_t cs, bool cont,
                         const void *out, void *in, size_t len)
 {
+    (void)bus;
+
     const uint8_t *out_buf = out;
     uint8_t *in_buf = in;
 
