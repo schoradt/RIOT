@@ -43,6 +43,14 @@ ifneq (,$(filter at,$(USEMODULE)))
   USEMODULE += fmt
   USEMODULE += isrpipe
   USEMODULE += isrpipe_read_timeout
+
+  _AT_ISR_MODULE := $(filter at_urc_isr_%,$(USEMODULE))
+  ifneq (,$(_AT_ISR_MODULE))
+    # pull in the correspondant event_thread_<priority> module
+    USEMODULE += $(_AT_ISR_MODULE:at_urc_isr_%=event_thread_%)
+    USEMODULE += at_urc
+    USEMODULE += at_urc_isr
+  endif
 endif
 
 ifneq (,$(filter at24c%,$(USEMODULE)))
@@ -217,6 +225,12 @@ endif
 ifneq (,$(filter dcf77,$(USEMODULE)))
   FEATURES_REQUIRED += periph_gpio
   FEATURES_REQUIRED += periph_gpio_irq
+  USEMODULE += xtimer
+endif
+
+ifneq (,$(filter dfplayer,$(USEMODULE)))
+  FEATURES_REQUIRED += periph_uart
+  FEATURES_REQUIRED += periph_gpio
   USEMODULE += xtimer
 endif
 
@@ -669,7 +683,15 @@ endif
 ifneq (,$(filter sdcard_spi,$(USEMODULE)))
   FEATURES_REQUIRED += periph_gpio
   FEATURES_REQUIRED += periph_spi
+  FEATURES_OPTIONAL += periph_spi_reconfigure
   DEFAULT_MODULE += auto_init_storage
+  USEMODULE += checksum
+  USEMODULE += xtimer
+endif
+
+ifneq (,$(filter sdp3x,$(USEMODULE)))
+  FEATURES_REQUIRED += periph_i2c
+  FEATURES_REQUIRED += periph_gpio_irq
   USEMODULE += checksum
   USEMODULE += xtimer
 endif

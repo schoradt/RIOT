@@ -729,7 +729,7 @@ list-ttys:
 	$(Q)$(RIOTTOOLS)/usb-serial/list-ttys.sh
 
 doc:
-	make -BC $(RIOTBASE) doc
+	$(MAKE) -BC $(RIOTBASE) doc
 
 debug: $(DEBUGDEPS)
 	$(call check_cmd,$(DEBUGGER),Debug program)
@@ -804,6 +804,9 @@ include $(RIOTMAKE)/vars.inc.mk
 
 # Include build targets for selected tools
 include $(RIOTMAKE)/tools/targets.inc.mk
+
+# Checks and defaults for USB Vendor and Product ID
+include $(RIOTMAKE)/usb-codes.inc.mk
 
 # Warn if the selected board and drivers don't provide all needed features:
 ifneq (, $(filter all flash, $(if $(MAKECMDGOALS), $(MAKECMDGOALS), all)))
@@ -894,6 +897,10 @@ ifneq (,$(filter iotlab-m3 wsn430-v1_3b wsn430-v1_4,$(BOARD)))
   ifneq (,$(filter iotlab-%,$(MAKECMDGOALS)))
     include $(RIOTBASE)/dist/testbed-support/Makefile.iotlab
   endif
+endif
+
+ifneq (,$(filter openv-%,$(MAKECMDGOALS)))
+  include $(RIOTBASE)/dist/tools/openvisualizer/makefile.openvisualizer.inc.mk
 endif
 
 # Include desvirt Makefile
