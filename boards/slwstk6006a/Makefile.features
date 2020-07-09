@@ -1,0 +1,7 @@
+CPU = efm32
+CPU_FAM = efr32mg21
+CPU_MODEL = efr32mg21b020f1024im32
+
+# Put defined MCU peripherals here (in alphabetical order)
+FEATURES_PROVIDED += periph_timer
+FEATURES_PROVIDED += periph_uart
