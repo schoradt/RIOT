@@ -70,6 +70,9 @@ extern "C"
 #define LED1_ON gpio_set(LED1_PIN)
 #define LED1_OFF gpio_clear(LED1_PIN)
 #define LED1_TOGGLE gpio_toggle(LED1_PIN)
+    
+#define STDIO_UART_DEV       (UART_DEV(0))
+    
     /** @} */
 
     /**

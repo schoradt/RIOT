@@ -102,7 +102,7 @@ static void clk_init(void)
     
 #if defined(_SILICON_LABS_32B_SERIES_2)
     /* set (and enable) the HF clock source */
-    CMU_ClockSelectSet(cmuClock_HCLK, CLOCK_HF);
+    CMU_ClockSelectSet(cmuClock_SYSCLK, CLOCK_HF);
     CMU_ClockDivSet(cmuClock_CORE, CLOCK_CORE_DIV);
     
     if (CLOCK_HF == cmuSelect_HFXO) {

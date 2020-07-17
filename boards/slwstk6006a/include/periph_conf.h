@@ -56,8 +56,8 @@ extern "C"
     static const timer_conf_t timer_config[] = {
         {
             {
-            .dev = TIMER0,
-            .cmu = cmuClock_TIMER0
+                .dev = TIMER0,
+                .cmu = cmuClock_TIMER0
             },
             {
                 .dev = TIMER1,
@@ -79,15 +79,16 @@ extern "C"
     static const uart_conf_t uart_config[] = {
         {
             USART0,          /* device */
-            GPIO_PIN(PA, 5), /* RX pin */
-            GPIO_PIN(PA, 6), /* TX pin */
+            GPIO_PIN(PA, 6), /* RX pin */
+            GPIO_PIN(PA, 5), /* TX pin */
             1,               /* AF location */
-            2,               /* bit in CMU enable register */
+            cmuClock_PCLK,   /* bit in CMU enable register */
             USART0_RX_IRQn   /* IRQ base channel */
         },
     };
 
-#define UART_0_ISR_RX isr_usart2_rx
+#define UART_0_ISR_RX isr_usart0_rx
+
 #define UART_NUMOF ARRAY_SIZE(uart_config)
     /** @} */
 
