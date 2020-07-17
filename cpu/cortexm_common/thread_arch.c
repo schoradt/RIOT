@@ -372,6 +372,8 @@ void __attribute__((naked)) __attribute__((used)) isr_pendsv(void) {
                                            * causes end of exception*/
 #endif
     /* {r0-r3,r12,LR,PC,xPSR,s0-s15,FPSCR} are restored automatically on exception return */
+     ".ltorg                           \n" /* literal pool needed to access
+                                            * sched_active_thread */
     );
 }
 
@@ -460,6 +462,7 @@ void sched_arch_idle(void)
      * According to [this](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0321a/BIHJICIE.html),
      * dynamically changing the priority is not supported on CortexM0(+).
      */
+    unsigned state = irq_disable();
     NVIC_SetPriority(PendSV_IRQn, CPU_CORTEXM_PENDSV_IRQ_PRIO + 1);
     __DSB();
     __ISB();
@@ -469,5 +472,6 @@ void sched_arch_idle(void)
 #else
     __WFI();
 #endif
+    irq_restore(state);
     NVIC_SetPriority(PendSV_IRQn, CPU_CORTEXM_PENDSV_IRQ_PRIO);
 }

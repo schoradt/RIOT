@@ -22,6 +22,11 @@ config HAS_ARCH_32BIT
     help
         Indicates that the CPU has a 32-bits architecture.
 
+config HAS_ARCH_ARM
+    bool
+    help
+        Indicates that the current architecture is ARM.
+
 config HAS_ARDUINO
     bool
     help
@@ -41,11 +46,6 @@ config HAS_BOOTLOADER_ARDUINO
     bool
     help
         Indicates that the Arduino bootloader is used.
-
-config HAS_BOOTLOADER_NRFUTIL
-    bool
-    help
-        Indicates that the NRF Util bootloader is used.
 
 config HAS_CPP
     bool
