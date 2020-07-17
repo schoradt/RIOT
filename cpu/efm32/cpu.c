@@ -90,14 +90,25 @@ static void clk_init(void)
         CMU_HFXOInit(&init_hfxo);
     }
 
+#if defined(_SILICON_LABS_32B_SERIES_1)
     /* set (and enable) the HF clock source */
     CMU_ClockSelectSet(cmuClock_HF, CLOCK_HF);
     CMU_ClockDivSet(cmuClock_CORE, CLOCK_CORE_DIV);
-
-    /* disable the HFRCO if external crystal is used */
+    
     if (CLOCK_HF == cmuSelect_HFXO) {
         CMU_OscillatorEnable(cmuOsc_HFRCO, false, false);
     }
+#endif
+    
+#if defined(_SILICON_LABS_32B_SERIES_2)
+    /* set (and enable) the HF clock source */
+    CMU_ClockSelectSet(cmuClock_HCLK, CLOCK_HF);
+    CMU_ClockDivSet(cmuClock_CORE, CLOCK_CORE_DIV);
+    
+    if (CLOCK_HF == cmuSelect_HFXO) {
+        CMU_OscillatorEnable(cmuOsc_HFRCODPLL, false, false);
+    }
+#endif    
 
 #if defined(_SILICON_LABS_32B_SERIES_1)
     /* disable LFRCO comparator chopping and dynamic element matching
@@ -118,13 +129,14 @@ static void clk_init(void)
         CMU_LFXOInit(&init_lfxo);
     }
 
+#if defined(_SILICON_LABS_32B_SERIES_1)
     /* set (and enable) the LFA clock source */
     CMU_ClockSelectSet(cmuClock_LFA, CLOCK_LFA);
 
     /* set (and enable) the LFB clock source */
     CMU_ClockSelectSet(cmuClock_LFB, CLOCK_LFB);
 
-#if defined(_SILICON_LABS_32B_SERIES_1)
+
     /* set (and enable) the LFE clock source */
     CMU_ClockSelectSet(cmuClock_LFE, CLOCK_LFE);
 #endif

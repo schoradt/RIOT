@@ -77,7 +77,11 @@ int uart_init(uart_t dev, uint32_t baudrate, uart_rx_cb_t rx_cb, void *arg)
         USART_TypeDef *uart = (USART_TypeDef *) uart_config[dev].dev;
 
         /* enable clocks */
+#ifndef _SILICON_LABS_32B_SERIES_2
         CMU_ClockEnable(cmuClock_HFPER, true);
+#else
+        CMU_ClockEnable(cmuClock_HCLK, true);
+#endif
         CMU_ClockEnable(uart_config[dev].cmu, true);
 
         /* reset and initialize peripheral */

@@ -57,7 +57,12 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
     }
 
     /* enable clocks */
+#ifndef _SILICON_LABS_32B_SERIES_2
     CMU_ClockEnable(cmuClock_HFPER, true);
+#else
+    CMU_ClockEnable(cmuClock_HCLK, true);
+#endif
+    
     CMU_ClockEnable(cmuClock_GPIO, true);
 
     /* configure pin */
