@@ -38,9 +38,9 @@ extern "C"
  * @name    Connection to the on-board temperature/humidity sensor (Si7021)
  * @{
  */
-#define SI7021_I2C (I2C_0)
-#define SI7021_ADDR (0) /* TODO */
-#define SI7021_EN_PIN GPIO_PIN(PF, 8)
+// #define SI7021_I2C (I2C_0)
+// #define SI7021_ADDR (0) /* TODO */
+// #define SI7021_EN_PIN GPIO_PIN(PF, 8)
 /** @} */
 
 /**

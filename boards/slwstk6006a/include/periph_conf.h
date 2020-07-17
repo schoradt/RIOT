@@ -32,21 +32,21 @@ extern "C"
  * @name    Clock configuration
  * @{
  */
-#define CLOCK_RCOSC (14000000) /* internal RC oscillator speed */
-/* external oscillator speed, comment out if you want to use the internal RC
- * oscillator circuit as a clock source */
-#define CLOCK_HFXO (48000000U)
-/* define clock dividers */
-#define CLOCK_HFCORECLKDIV (1U) /* core clock divider */
-#define CLOCK_HFPERCLKDIV (1U)  /* peripheral clock divider */
-
-/* generate the actual clock values */
-#ifdef CLOCK_HFXO
-#define CLOCK_CORECLOCK (CLOCK_HFXO / CLOCK_HFCORECLKDIV)
-#else
-#define CLOCK_CORECLOCK (CLOCK_RCOSC / CLOCK_HFCORECLKDIV)
+#ifndef CLOCK_HF
+#define CLOCK_HF            cmuSelect_HFXO
 #endif
-#define CLOCK_HFPERCLK (CLOCK_CORECLOCK / CLOCK_HFPERCLKDIV)
+#ifndef CLOCK_CORE_DIV
+#define CLOCK_CORE_DIV      1
+#endif
+#ifndef CLOCK_LFA
+#define CLOCK_LFA           cmuSelect_LFRCO
+#endif
+#ifndef CLOCK_LFB
+#define CLOCK_LFB           cmuSelect_LFRCO
+#endif
+#ifndef CLOCK_LFE
+#define CLOCK_LFE           cmuSelect_LFRCO
+#endif
     /** @} */
 
     /**
@@ -55,11 +55,17 @@ extern "C"
  */
     static const timer_conf_t timer_config[] = {
         {
-            TIMER0,      /* lower numbered timer, used as pre-scaler */
-            TIMER1,      /* higher numbered timer, this is the one */
-            5,           /* pre-scaler bit in the CMU register */
-            TIMER1_IRQn, /* IRQn of the higher numbered driver */
-        }};
+            {
+            .dev = TIMER0,
+            .cmu = cmuClock_TIMER0
+            },
+            {
+                .dev = TIMER1,
+                .cmu = cmuClock_TIMER1
+            },
+            .irq = TIMER1_IRQn
+        }
+    };
 
 #define TIMER_0_ISR isr_timer1
 #define TIMER_0_MAX_VALUE (0xffff) /* 16-bit timer */
