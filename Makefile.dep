@@ -15,6 +15,9 @@
 include $(RIOTBASE)/sys/Makefile.dep
 include $(RIOTBASE)/drivers/Makefile.dep
 
+# pull Makefile.dep of each driver modules if they exist
+-include $(sort $(USEMODULE:%=$(RIOTBASE)/drivers/%/Makefile.dep))
+
 # pull dependencies from packages
 -include $(USEPKG:%=$(RIOTPKG)/%/Makefile.dep)
 
@@ -617,6 +620,7 @@ ifneq (,$(filter cpp11-compat,$(USEMODULE)))
   USEMODULE += xtimer
   USEMODULE += timex
   FEATURES_REQUIRED += cpp
+  FEATURES_REQUIRED += libstdcpp
 endif
 
 ifneq (,$(filter gnrc,$(USEMODULE)))
@@ -774,7 +778,8 @@ ifneq (,$(filter random,$(USEMODULE)))
     USEMODULE += tinymt32
   endif
 
-  ifneq (,$(filter prng_sha1prng,$(USEMODULE)))
+  ifneq (,$(filter prng_sha%prng,$(USEMODULE)))
+    USEMODULE += prng_shaxprng
     USEMODULE += hashes
   endif
 
@@ -856,10 +861,18 @@ ifneq (,$(filter spiffs,$(USEMODULE)))
   USEMODULE += spiffs_fs
   USEMODULE += mtd
 endif
+
 ifneq (,$(filter littlefs,$(USEMODULE)))
   USEPKG += littlefs
   USEMODULE += vfs
   USEMODULE += littlefs_fs
+  USEMODULE += mtd
+endif
+
+ifneq (,$(filter littlefs2,$(USEMODULE)))
+  USEPKG += littlefs2
+  USEMODULE += vfs
+  USEMODULE += littlefs2_fs
   USEMODULE += mtd
 endif
 
@@ -1084,6 +1097,11 @@ FEATURES_REQUIRED += $(filter cpu_core_%,$(FEATURES_PROVIDED))
 
 # don't use idle thread if architecture has needed support
 FEATURES_OPTIONAL += no_idle_thread
+
+ifneq (,$(filter libstdcpp,$(FEATURES_USED)))
+  # Also use C++ if libstdc++ is used
+  FEATURES_REQUIRED += cpp
+endif
 
 ifneq (,$(filter ecc_%,$(USEMODULE)))
   USEMODULE += ecc

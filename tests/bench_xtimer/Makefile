@@ -22,9 +22,9 @@ LOW_MEMORY_BOARDS += \
   cc1352-launchpad \
   cc2650-launchpad \
   cc2650stk \
-  chronos \
   derfmega128 \
   feather-m0 \
+  feather-m0-wifi \
   hifive1 \
   hifive1b \
   i-nucleo-lrwan1 \

@@ -20,7 +20,6 @@ BOARD_INSUFFICIENT_MEMORY := \
     calliope-mini \
     cc2650-launchpad \
     cc2650stk \
-    chronos \
     derfmega128 \
     derfmega256 \
     ek-lm4f120xl \
@@ -57,6 +56,7 @@ BOARD_INSUFFICIENT_MEMORY := \
     nucleo-f303k8 \
     nucleo-f334r8 \
     nucleo-f410rb \
+    nucleo-g070rb \
     nucleo-l031k6 \
     nucleo-l053r8 \
     nucleo-l073rz \

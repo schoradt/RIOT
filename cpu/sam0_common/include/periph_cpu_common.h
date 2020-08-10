@@ -189,6 +189,15 @@ typedef enum {
     UART_DATA_BITS_8 = 0x0,   /**< 8 data bits */
 } uart_data_bits_t;
 /** @} */
+
+/**
+ * @brief   UART pin getters
+ * @{
+ */
+#define uart_pin_rx(dev) uart_config[dev].rx_pin
+#define uart_pin_tx(dev) uart_config[dev].tx_pin
+/** @} */
+
 #endif /* ndef DOXYGEN */
 
 
@@ -201,6 +210,16 @@ typedef enum {
 
 /**
  * @brief   UART device configuration
+ *
+ *          The frequency f() of the clock `gclk_src` must fulfill the condition
+ *
+ *              16 * baud < f(gclk_src) ≤ 2²⁰ * baud
+ *
+ *          in Asynchronous Arithmetic mode and
+ *
+ *              16 * baud < f(gclk_src) ≤ 2¹⁷ * baud
+ *
+ *          in Asynchronous Fractional mode
  */
 typedef struct {
     SercomUsart *dev;       /**< pointer to the used UART device */
@@ -383,6 +402,15 @@ typedef enum {
 
 /**
  * @brief   I2C device configuration
+ *          The frequency f() of the clock `gclk_src` must fulfill the condition
+ *
+ *              4 * speed ≤ f(gclk_src) ≤ 512 * speed
+ *
+ *          if speed ≤ 1 MHz and
+ *
+ *             12 * speed ≤ f(gclk_src) ≤ 520 * speed
+ *
+ *          if speed > 1 MHz
  */
 typedef struct {
     SercomI2cm *dev;        /**< pointer to the used I2C device */

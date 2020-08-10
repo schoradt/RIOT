@@ -41,6 +41,7 @@ PSEUDOMODULES += gnrc_pktbuf_cmd
 PSEUDOMODULES += gnrc_netif_6lo
 PSEUDOMODULES += gnrc_netif_ipv6
 PSEUDOMODULES += gnrc_netif_mac
+PSEUDOMODULES += gnrc_netif_single
 PSEUDOMODULES += gnrc_netif_cmd_%
 PSEUDOMODULES += gnrc_netif_dedup
 PSEUDOMODULES += gnrc_nettype_%
@@ -185,6 +186,9 @@ PSEUDOMODULES += ina220
 
 # include variants of mrf24j40 drivers as pseudo modules
 PSEUDOMODULES += mrf24j40m%
+
+# include variants of sdp3x drivers as pseudo modules
+PSEUDOMODULES += sdp3x_irq
 
 # include variants of SX127X drivers as pseudo modules
 PSEUDOMODULES += sx1272
