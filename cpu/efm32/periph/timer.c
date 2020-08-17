@@ -175,8 +175,16 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value)
             return -1;
         }
 
-        tim->CC[channel].CCV = (uint32_t) value;
-        tim->CC[channel].CTRL = TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
+        TIMER_CompareSet(tim, channel, value);
+        
+        TIMER_InitCC_TypeDef init_channel = TIMER_INITCC_DEFAULT;
+        
+        init_channel.mode = timerCCModeCompare;
+        
+        TIMER_InitCC(tim, channel, &init_channel);
+        
+        //tim->CC[channel].CCV = (uint32_t) value;
+        //tim->CC[channel].CTRL = TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
     }
     else {
         LETIMER_TypeDef *tim = timer_config[dev].timer.dev;
@@ -208,7 +216,12 @@ int timer_clear(tim_t dev, int channel)
 {
     if (!_is_letimer(dev)) {
         TIMER_TypeDef *tim = timer_config[dev].timer.dev;
-        tim->CC[channel].CTRL = _TIMER_CC_CTRL_MODE_OFF;
+        
+        TIMER_InitCC_TypeDef init_channel = TIMER_INITCC_DEFAULT;
+        
+        TIMER_InitCC(tim, channel, &init_channel);
+        
+        //tim->CC[channel].CTRL = _TIMER_CC_CTRL_MODE_OFF;
     }
     else {
         LETIMER_TypeDef *tim = timer_config[dev].timer.dev;
@@ -297,10 +310,16 @@ void TIMER_0_ISR(void)
     else {
         TIMER_TypeDef *tim = timer_config[dev].timer.dev;
 
+        TIMER_InitCC_TypeDef init_channel = TIMER_INITCC_DEFAULT;
+        
         for (int i = 0; i < TIMER_CHANNEL_NUMOF; i++) {
             if (tim->IF & (TIMER_IF_CC0 << i)) {
-                tim->CC[i].CTRL = _TIMER_CC_CTRL_MODE_OFF;
-                tim->IFC = (TIMER_IFC_CC0 << i);
+                TIMER_InitCC(tim, i, &init_channel);
+                // tim->CC[i].CTRL = _TIMER_CC_CTRL_MODE_OFF;
+                
+                TIMER_IntClear(tim, (TIMER_IFC_CC0 << i));
+                //tim->IFC = (TIMER_IFC_CC0 << i);
+                
                 isr_ctx[dev].cb(isr_ctx[dev].arg, i);
             }
         }

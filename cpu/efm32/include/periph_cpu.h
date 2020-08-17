@@ -444,6 +444,30 @@ typedef struct {
  */
 #define PM_NUM_MODES    (2U)
 
+#ifndef TIMER_IFC_CC0
+#define TIMER_IFC_CC0 TIMER_IF_CC0
+#endif
+
+#ifndef TIMER_IFC_CC1
+#define TIMER_IFC_CC1 TIMER_IF_CC1
+#endif
+
+#ifndef TIMER_IFC_CC2
+#define TIMER_IFC_CC2 TIMER_IF_CC2
+#endif
+
+#ifndef LETIMER_IFC_COMP0
+#define LETIMER_IFC_COMP0 LETIMER_IF_COMP0
+#endif
+
+#ifndef LETIMER_IFC_COMP1
+#define LETIMER_IFC_COMP1 LETIMER_IF_COMP1
+#endif
+
+#ifndef LETIMER_IFC_COMP2
+#define LETIMER_IFC_COMP2 LETIMER_IF_COMP2
+#endif
+
 #ifdef __cplusplus
 }
 #endif

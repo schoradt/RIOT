@@ -47,6 +47,10 @@ extern "C"
 #ifndef CLOCK_LFE
 #define CLOCK_LFE           cmuSelect_LFRCO
 #endif
+    
+#define cmuClock_CORELE cmuSelect_LFXO
+#define cmuClock_HFPER cmuSelect_HFXO
+    
     /** @} */
 
     /**
